@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframes</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:#f0f0f0;color:#333;display:flex;min-height:100vh}
+/* NAV */
+.wf-nav{width:220px;background:#fff;border-right:2px solid #ddd;padding:16px;position:fixed;height:100vh;overflow-y:auto;z-index:100}
+.wf-nav h2{font-size:14px;color:#666;margin:0 0 12px;padding-bottom:8px;border-bottom:2px solid #eee}
+.wf-nav a{display:block;padding:6px 8px;color:#555;text-decoration:none;font-size:13px;border-radius:4px;margin-bottom:2px}
+.wf-nav a:hover{background:#e8e8e8;color:#111}
+.wf-nav .nav-group{margin-bottom:12px}
+.wf-nav .nav-label{font-size:11px;color:#999;text-transform:uppercase;letter-spacing:1px;margin:8px 0 4px 8px}
+/* MAIN */
+.wf-main{margin-left:220px;padding:32px;flex:1}
+.wf-section{margin-bottom:60px;background:#fff;border:2px solid #ccc;border-radius:8px;padding:24px;max-width:1100px}
+.wf-section h2{font-size:20px;color:#444;border-bottom:2px solid #ddd;padding-bottom:8px;margin-bottom:20px}
+.wf-section h3{font-size:15px;color:#666;margin:16px 0 8px}
+/* WIREFRAME ELEMENTS */
+.wf-box{border:2px dashed #bbb;border-radius:6px;padding:12px;margin:8px 0;background:#fafafa;min-height:40px;position:relative}
+.wf-box.solid{border-style:solid}
+.wf-box .label{position:absolute;top:-10px;left:12px;background:#fff;padding:0 6px;font-size:11px;color:#888;font-weight:600}
+.wf-row{display:flex;gap:12px;margin:8px 0;flex-wrap:wrap}
+.wf-col{flex:1;min-width:0}
+.wf-input{border:2px solid #ccc;border-radius:4px;padding:8px 12px;background:#f9f9f9;color:#aaa;font-size:13px;width:100%}
+.wf-btn{border:2px solid #999;border-radius:4px;padding:8px 16px;background:#e0e0e0;color:#555;font-size:13px;cursor:default;display:inline-block;text-align:center}
+.wf-btn.primary{background:#888;color:#fff;border-color:#666}
+.wf-icon{display:inline-block;width:20px;height:20px;border:2px solid #bbb;border-radius:50%;text-align:center;line-height:18px;font-size:11px;color:#999}
+.wf-avatar{width:36px;height:36px;border:2px solid #bbb;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:12px;color:#888}
+.wf-card{border:2px solid #ccc;border-radius:6px;padding:12px;background:#fff;margin:6px 0}
+.wf-table{width:100%;border-collapse:collapse;margin:8px 0;font-size:13px}
+.wf-table th,.wf-table td{border:1px solid #ddd;padding:8px;text-align:left}
+.wf-table th{background:#f0f0f0;color:#666;font-weight:600}
+.wf-table td{color:#999}
+.wf-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;border:1px solid #ccc;color:#888;background:#f5f5f5}
+.wf-placeholder{background:repeating-linear-gradient(45deg,#f5f5f5,#f5f5f5 10px,#eee 10px,#eee 20px);border:2px dashed #ccc;border-radius:4px;min-height:80px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px}
+.wf-sidebar-mock{width:260px;background:#f5f5f5;border:2px solid #ccc;border-radius:6px;padding:12px;flex-shrink:0}
+.wf-sidebar-mock .menu-item{padding:6px 10px;margin:2px 0;border-radius:4px;font-size:13px;color:#888}
+.wf-sidebar-mock .menu-item.active{background:#e0e0e0;color:#555;font-weight:600}
+.wf-header-mock{background:#f5f5f5;border:2px solid #ccc;border-radius:6px;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.wf-tabs{display:flex;gap:0;border-bottom:2px solid #ddd;margin-bottom:12px}
+.wf-tabs .tab{padding:8px 16px;font-size:13px;color:#999;border-bottom:2px solid transparent;cursor:default}
+.wf-tabs .tab.active{color:#555;border-bottom-color:#888;font-weight:600}
+.wf-modal{border:2px solid #999;border-radius:8px;background:#fff;padding:0;max-width:500px;margin:8px auto;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.wf-modal .modal-header{padding:12px 16px;border-bottom:2px solid #ddd;display:flex;justify-content:space-between;align-items:center;font-weight:600;color:#555}
+.wf-modal .modal-body{padding:16px}
+.wf-modal .modal-footer{padding:12px 16px;border-top:2px solid #ddd;display:flex;justify-content:flex-end;gap:8px}
+.wf-stat{border:2px solid #ccc;border-radius:8px;padding:16px;text-align:center;flex:1;min-width:120px}
+.wf-stat .stat-val{font-size:28px;font-weight:700;color:#666}
+.wf-stat .stat-label{font-size:12px;color:#aaa;margin-top:4px}
+.wf-chat-bubble{border:2px solid #ddd;border-radius:12px;padding:10px 14px;margin:6px 0;max-width:70%;font-size:13px;color:#888}
+.wf-chat-bubble.user{margin-left:auto;background:#e8e8e8;border-color:#ccc}
+.wf-chat-bubble.bot{background:#f9f9f9}
+.wf-minimap{width:120px;height:80px;border:2px solid #ccc;border-radius:4px;background:#f9f9f9;position:relative}
+.wf-minimap .viewport{width:40px;height:30px;border:2px solid #888;position:absolute;top:10px;left:10px}
+.wf-flowchart-node{border:2px solid #bbb;border-radius:8px;padding:8px 14px;background:#fff;display:inline-block;font-size:12px;color:#888;margin:4px}
+.wf-line{width:40px;height:2px;background:#bbb;display:inline-block;vertical-align:middle}
+.wf-arrow{display:inline-block;vertical-align:middle;color:#bbb;font-size:16px}
+.page-label{background:#888;color:#fff;display:inline-block;padding:4px 12px;border-radius:4px;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<nav class="wf-nav">
+<h2>Wireframes</h2>
+<div class="nav-group">
+<div class="nav-label">Auth</div>
+<a href="#login">1. Login</a>
+</div>
+<div class="nav-group">
+<div class="nav-label">Layout</div>
+<a href="#layout">2. Main Layout</a>
+</div>
+<div class="nav-group">
+<div class="nav-label">Pages</div>
+<a href="#dashboard">3. Dashboard</a>
+<a href="#glossary">4. Business Glossary</a>
+<a href="#catalog">5. Data Catalog</a>
+<a href="#external">6. External Sources</a>
+<a href="#reports">7. Reporting Catalog</a>
+<a href="#lineage">8. Data Lineage</a>
+<a href="#mapper">9. Column Mapper</a>
+<a href="#governance">10. Governance</a>
+</div>
+<div class="nav-group">
+<div class="nav-label">Admin</div>
+<a href="#users">11. Users</a>
+<a href="#roles">12. Roles</a>
+<a href="#settings">13. Settings</a>
+</div>
+<div class="nav-group">
+<div class="nav-label">Components</div>
+<a href="#modals">14. Modals</a>
+<a href="#modals-glossary" style="padding-left:18px;font-size:12px">· Glossary</a>
+<a href="#modals-catalog" style="padding-left:18px;font-size:12px">· Data Catalog</a>
+<a href="#modals-reports" style="padding-left:18px;font-size:12px">· Reports</a>
+<a href="#modals-admin" style="padding-left:18px;font-size:12px">· Admin</a>
+</div>
+</nav>
+
+<main class="wf-main">
+
+<!-- 1. LOGIN -->
+<section class="wf-section" id="login">
+<span class="page-label">Page 1</span>
+<h2>Login Page</h2>
+<div class="wf-row" style="min-height:400px;gap:0">
+<div style="flex:1;background:#2a2a2a;border-radius:6px 0 0 6px;padding:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #555">
+<div style="width:120px;height:60px;border:2px dashed #666;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#777;font-size:12px;margin-bottom:16px">LOGO</div>
+<div style="color:#777;font-size:14px;margin-bottom:20px">Discover your data universe</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center">
+<span class="wf-badge" style="border-color:#555;color:#777;background:#333">Catalog</span>
+<span class="wf-badge" style="border-color:#555;color:#777;background:#333">Quality</span>
+<span class="wf-badge" style="border-color:#555;color:#777;background:#333">Lineage</span>
+<span class="wf-badge" style="border-color:#555;color:#777;background:#333">Glossary</span>
+</div>
+<div style="margin-top:30px;width:100px;height:100px;border:2px dashed #555;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#666;font-size:10px">Animated Orbit</div>
+</div>
+<div style="flex:1;background:#1a1a2e;border-radius:0 6px 6px 0;padding:40px;display:flex;flex-direction:column;justify-content:center;border:2px solid #555">
+<div style="max-width:300px;margin:0 auto;width:100%">
+<div style="color:#888;font-size:18px;font-weight:600;margin-bottom:4px">Xoş gəlmisiniz</div>
+<div style="color:#666;font-size:12px;margin-bottom:20px">Hesabınıza daxil olun</div>
+<div class="wf-row" style="gap:4px;margin-bottom:12px">
+<div class="wf-btn" style="flex:1;font-size:11px;background:#444;color:#aaa;border-color:#555">Lokal</div>
+<div class="wf-btn" style="flex:1;font-size:11px;background:#333;color:#666;border-color:#555">LDAP</div>
+</div>
+<div style="margin-bottom:8px;font-size:11px;color:#666">İstifadəçi adı</div>
+<div class="wf-input" style="background:#2a2a3e;border-color:#444;color:#666;margin-bottom:12px">admin</div>
+<div style="margin-bottom:8px;font-size:11px;color:#666">Parol</div>
+<div class="wf-input" style="background:#2a2a3e;border-color:#444;color:#666;margin-bottom:16px">••••••</div>
+<div class="wf-btn primary" style="width:100%;background:#555;border-color:#444">Daxil ol</div>
+<div style="margin-top:20px;font-size:10px;color:#555;text-align:center">Demo: admin / 12345</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 2. MAIN LAYOUT -->
+<section class="wf-section" id="layout">
+<span class="page-label">Page 2</span>
+<h2>Main Layout Structure</h2>
+<div class="wf-box solid" style="padding:0;overflow:hidden">
+<div class="wf-header-mock" style="border-radius:4px 4px 0 0;margin:0;border-left:0;border-right:0;border-top:0">
+<div style="display:flex;align-items:center;gap:12px">
+<div style="width:80px;height:30px;border:2px dashed #bbb;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#aaa">LOGO</div>
+</div>
+<div style="flex:1"></div>
+<div style="display:flex;align-items:center;gap:8px">
+<span style="font-size:11px;color:#aaa">AZ</span>
+<span style="font-size:11px;color:#666;font-weight:600">EN</span>
+<div class="wf-avatar">AK</div>
+<div style="font-size:12px;color:#888">Admin</div>
+</div>
+</div>
+<div style="display:flex;min-height:350px">
+<div class="wf-sidebar-mock" style="border-radius:0;border-left:0;border-bottom:0;border-top:0">
+<div style="font-size:11px;color:#aaa;padding:4px 10px">MENU</div>
+<div class="menu-item active">📊 Dashboard</div>
+<div class="menu-item">📖 Business Glossary</div>
+<div class="menu-item">🗄️ Data Catalog</div>
+<div class="menu-item">🔗 External Sources</div>
+<div class="menu-item">📋 Reporting Catalog</div>
+<div class="menu-item">🔀 Data Lineage</div>
+<div class="menu-item">🔄 Column Mapper</div>
+<div class="menu-item">🏛️ Governance</div>
+<div style="border-top:1px solid #ddd;margin:8px 0"></div>
+<div style="font-size:11px;color:#aaa;padding:4px 10px">ADMIN</div>
+<div class="menu-item">👥 Users</div>
+<div class="menu-item">🔑 Roles</div>
+<div class="menu-item">⚙️ Settings</div>
+</div>
+<div style="flex:1;padding:20px;display:flex;align-items:center;justify-content:center">
+<div class="wf-placeholder" style="width:100%;height:100%">Content Area (səhifə məzmunu)</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 3. DASHBOARD -->
+<section class="wf-section" id="dashboard">
+<span class="page-label">Page 3</span>
+<h2>Dashboard</h2>
+<div class="wf-row">
+<div class="wf-stat"><div class="stat-val">156</div><div class="stat-label">Glossary Terms</div></div>
+<div class="wf-stat"><div class="stat-val">48</div><div class="stat-label">Catalog Tables</div></div>
+<div class="wf-stat"><div class="stat-val">94%</div><div class="stat-label">Quality Score</div></div>
+<div class="wf-stat"><div class="stat-val">23</div><div class="stat-label">Reports</div></div>
+<div class="wf-stat"><div class="stat-val">12</div><div class="stat-label">Active Users</div></div>
+</div>
+<div class="wf-row" style="margin-top:16px">
+<div class="wf-col">
+<div class="wf-box solid"><span class="label">Quality Trend</span>
+<div class="wf-placeholder" style="height:160px">📈 Line Chart - Quality Score Over Time</div>
+</div>
+</div>
+<div class="wf-col">
+<div class="wf-box solid"><span class="label">Terms by Status</span>
+<div class="wf-placeholder" style="height:160px">🍩 Donut Chart - Draft / Approved / Archived</div>
+</div>
+</div>
+</div>
+<div class="wf-row">
+<div class="wf-col">
+<div class="wf-box solid"><span class="label">Recent Activity</span>
+<div style="font-size:12px;color:#aaa;padding:4px 0">• admin created term "Revenue" — 2 saat əvvəl</div>
+<div style="font-size:12px;color:#aaa;padding:4px 0">• admin updated table "customers" — 5 saat əvvəl</div>
+<div style="font-size:12px;color:#aaa;padding:4px 0">• quality scan completed — 1 gün əvvəl</div>
+</div>
+</div>
+<div class="wf-col">
+<div class="wf-box solid"><span class="label">Tables by Layer</span>
+<div class="wf-placeholder" style="height:120px">📊 Bar Chart - Raw / Staging / DWH / Mart</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 4. BUSINESS GLOSSARY -->
+<section class="wf-section" id="glossary">
+<span class="page-label">Page 4</span>
+<h2>Business Glossary</h2>
+<div class="wf-row" style="justify-content:space-between;align-items:center;margin-bottom:8px">
+<div class="wf-tabs" style="margin-bottom:0">
+<div class="tab active">Terms</div>
+<div class="tab">Domains</div>
+<div class="tab">Roles</div>
+<div class="tab">Workflow</div>
+<div class="tab">Stakeholders</div>
+</div>
+<div class="wf-btn primary" style="font-size:12px">+ Add Term</div>
+</div>
+<div class="wf-row" style="margin-bottom:8px">
+<div class="wf-input" style="max-width:300px;font-size:12px">🔍 Search terms...</div>
+<div class="wf-btn" style="font-size:11px">Filter by Status</div>
+<div class="wf-btn" style="font-size:11px">Filter by Domain</div>
+</div>
+<table class="wf-table">
+<tr><th>Ad</th><th>Domain</th><th>Status</th><th>Owner</th><th>Yaradılıb</th><th>Əməliyyatlar</th></tr>
+<tr><td style="color:#555">Revenue</td><td>Finance</td><td><span class="wf-badge" style="background:#e8f5e9;color:#4caf50;border-color:#a5d6a7">Approved</span></td><td>Admin</td><td>2024-01-15</td><td><span class="wf-icon">✎</span> <span class="wf-icon">🗑</span></td></tr>
+<tr><td style="color:#555">Customer ID</td><td>CRM</td><td><span class="wf-badge" style="background:#fff3e0;color:#ff9800;border-color:#ffcc80">Draft</span></td><td>Steward</td><td>2024-01-20</td><td><span class="wf-icon">✎</span> <span class="wf-icon">🗑</span></td></tr>
+<tr><td style="color:#555">Churn Rate</td><td>Analytics</td><td><span class="wf-badge" style="background:#e8f5e9;color:#4caf50;border-color:#a5d6a7">Approved</span></td><td>Analyst</td><td>2024-02-01</td><td><span class="wf-icon">✎</span> <span class="wf-icon">🗑</span></td></tr>
+</table>
+
+<h3>Term Detail Page</h3>
+<div class="wf-box solid" style="margin-top:8px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+<div class="wf-btn" style="font-size:11px">← Back</div>
+<div style="font-size:16px;font-weight:600;color:#555">Revenue</div>
+<span class="wf-badge" style="background:#e8f5e9;color:#4caf50;border-color:#a5d6a7">Approved</span>
+</div>
+<div class="wf-row">
+<div class="wf-col">
+<div class="wf-card"><div style="font-size:11px;color:#aaa;margin-bottom:4px">Business Definition</div><div style="font-size:13px;color:#888">Total income generated from sales...</div></div>
+<div class="wf-card"><div style="font-size:11px;color:#aaa;margin-bottom:4px">Technical Definition</div><div style="font-size:13px;color:#888">SUM(order_amount) WHERE status='completed'</div></div>
+</div>
+<div class="wf-col">
+<div class="wf-card"><div style="font-size:11px;color:#aaa;margin-bottom:4px">Domain</div><div style="font-size:13px;color:#888">Finance</div></div>
+<div class="wf-card"><div style="font-size:11px;color:#aaa;margin-bottom:4px">Owner</div><div style="font-size:13px;color:#888">Admin User</div></div>
+<div class="wf-card"><div style="font-size:11px;color:#aaa;margin-bottom:4px">Synonyms</div><div style="font-size:13px;color:#888">Income, Sales Revenue</div></div>
+</div>
+</div>
+<h3 style="margin-top:12px">Related Quality Rules</h3>
+<table class="wf-table">
+<tr><th>Rule</th><th>Type</th><th>Severity</th><th>Status</th></tr>
+<tr><td>Revenue not null</td><td>Completeness</td><td>High</td><td><span class="wf-badge">Active</span></td></tr>
+</table>
+<h3>Physical Attributes</h3>
+<table class="wf-table">
+<tr><th>Table</th><th>Column</th><th>Location</th></tr>
+<tr><td>fact_sales</td><td>revenue_amount</td><td>DWH Layer</td></tr>
+</table>
+</div>
+</section>
+
+<!-- 5. DATA CATALOG -->
+<section class="wf-section" id="catalog">
+<span class="page-label">Page 5</span>
+<h2>Data Catalog</h2>
+<div class="wf-row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+<div style="font-size:14px;color:#666">Layers & Tables</div>
+<div class="wf-btn primary" style="font-size:12px">⚙ Manage Layers</div>
+</div>
+<!-- Layer 1 -->
+<div class="wf-box solid" style="margin-bottom:8px">
+<div style="display:flex;align-items:center;gap:8px;cursor:default">
+<span style="color:#aaa">▼</span>
+<span style="font-weight:600;color:#555">🟦 Raw Layer</span>
+<span class="wf-badge">5 tables</span>
+</div>
+<div style="padding-left:20px;margin-top:8px">
+<div class="wf-card" style="display:flex;align-items:center;justify-content:space-between">
+<div><span style="color:#555;font-weight:500">raw_customers</span> <span style="color:#aaa;font-size:11px">— 12 columns, 50k rows</span></div>
+<div><span class="wf-icon" style="font-size:10px">→</span></div>
+</div>
+<div class="wf-card" style="display:flex;align-items:center;justify-content:space-between">
+<div><span style="color:#555;font-weight:500">raw_orders</span> <span style="color:#aaa;font-size:11px">— 8 columns, 120k rows</span></div>
+<div><span class="wf-icon" style="font-size:10px">→</span></div>
+</div>
+</div>
+</div>
+<!-- Layer 2 -->
+<div class="wf-box solid" style="margin-bottom:8px">
+<div style="display:flex;align-items:center;gap:8px;cursor:default">
+<span style="color:#aaa">▶</span>
+<span style="font-weight:600;color:#555">🟩 Staging Layer</span>
+<span class="wf-badge">3 tables</span>
+</div>
+</div>
+<!-- Layer 3 -->
+<div class="wf-box solid">
+<div style="display:flex;align-items:center;gap:8px;cursor:default">
+<span style="color:#aaa">▶</span>
+<span style="font-weight:600;color:#555">🟨 DWH Layer</span>
+<span class="wf-badge">8 tables</span>
+</div>
+</div>
+
+<h3>Table Detail Page</h3>
+<div class="wf-box solid" style="margin-top:8px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+<div class="wf-btn" style="font-size:11px">← Back</div>
+<span style="font-size:16px;font-weight:600;color:#555">raw_customers</span>
+<span class="wf-badge">Raw Layer</span>
+</div>
+<div class="wf-row">
+<div class="wf-card" style="flex:1"><div style="font-size:11px;color:#aaa">Row Count</div><div style="font-size:18px;color:#666;font-weight:600">50,234</div></div>
+<div class="wf-card" style="flex:1"><div style="font-size:11px;color:#aaa">Columns</div><div style="font-size:18px;color:#666;font-weight:600">12</div></div>
+<div class="wf-card" style="flex:1"><div style="font-size:11px;color:#aaa">Owner</div><div style="font-size:18px;color:#666;font-weight:600">Admin</div></div>
+<div class="wf-card" style="flex:1"><div style="font-size:11px;color:#aaa">Type</div><div style="font-size:18px;color:#666;font-weight:600">TABLE</div></div>
+</div>
+<h3>Columns</h3>
+<table class="wf-table">
+<tr><th>🔑</th><th>Ad</th><th>Tip</th><th>Nullable</th><th>Təsvir</th></tr>
+<tr><td>PK</td><td style="color:#555">customer_id</td><td>INT</td><td>No</td><td>Primary key</td></tr>
+<tr><td></td><td style="color:#555">first_name</td><td>VARCHAR(100)</td><td>No</td><td>Customer first name</td></tr>
+<tr><td></td><td style="color:#555">email</td><td>VARCHAR(255)</td><td>Yes</td><td>Email address</td></tr>
+<tr><td>FK</td><td style="color:#555">region_id</td><td>INT</td><td>Yes</td><td>Foreign key to regions</td></tr>
+</table>
+</div>
+</section>
+
+<!-- 6. EXTERNAL SOURCES -->
+<section class="wf-section" id="external">
+<span class="page-label">Page 6</span>
+<h2>External Sources</h2>
+<div class="wf-row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+<div style="font-size:14px;color:#666">Database Connections</div>
+<div class="wf-btn primary" style="font-size:12px">+ Add Connection</div>
+</div>
+<div class="wf-row">
+<div class="wf-card" style="flex:1;max-width:300px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<span style="font-weight:600;color:#555">Production MySQL</span>
+<span class="wf-badge" style="background:#e8f5e9;color:#4caf50">Active</span>
+</div>
+<div style="font-size:12px;color:#aaa;margin-bottom:4px">Host: db.example.com:3306</div>
+<div style="font-size:12px;color:#aaa;margin-bottom:4px">Database: production_db</div>
+<div style="font-size:12px;color:#aaa;margin-bottom:8px">Tables: 24</div>
+<div style="display:flex;gap:6px">
+<div class="wf-btn" style="font-size:11px;flex:1">Test</div>
+<div class="wf-btn" style="font-size:11px;flex:1">Import</div>
+<div class="wf-btn" style="font-size:11px;flex:1">Edit</div>
+</div>
+</div>
+<div class="wf-card" style="flex:1;max-width:300px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+<span style="font-weight:600;color:#555">Analytics PostgreSQL</span>
+<span class="wf-badge" style="background:#fff3e0;color:#ff9800">Testing</span>
+</div>
+<div style="font-size:12px;color:#aaa;margin-bottom:4px">Host: analytics.local:5432</div>
+<div style="font-size:12px;color:#aaa;margin-bottom:4px">Database: analytics</div>
+<div style="font-size:12px;color:#aaa;margin-bottom:8px">Tables: —</div>
+<div style="display:flex;gap:6px">
+<div class="wf-btn" style="font-size:11px;flex:1">Test</div>
+<div class="wf-btn" style="font-size:11px;flex:1">Import</div>
+<div class="wf-btn" style="font-size:11px;flex:1">Edit</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- 7. REPORTING CATALOG -->
+<section class="wf-section" id="reports">
+<span class="page-label">Page 7</span>
+<h2>Reporting Catalog</h2>
+<div class="wf-row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+<div class="wf-input" style="max-width:250px;font-size:12px">🔍 Search reports...</div>
+<div class="wf-btn primary" style="font-size:12px">+ Add Report</div>
+</div>
+<table class="wf-table">
+<tr><th>Report</th><th>Domain</th><th>BI Tool</th><th>Owner</th><th>Certification</th><th>Quality</th><th>Actions</th></tr>
+<tr><td style="color:#555">Sales Dashboard</td><td>Finance</td><td><span class="wf-badge">Power BI</span></td><td>Admin</td><td><span class="wf-badge" style="background:#e8f5e9;color:#4caf50">Certified</span></td><td>96%</td><td><span class="wf-icon">✎</span> <span class="wf-icon">🗑</span></td></tr>
+<tr><td style="color:#555">HR Analytics</td><td>HR</td><td><span class="wf-badge">Tableau</span></td><td>Analyst</td><td><span class="wf-badge" style="background:#fff3e0;color:#ff9800">Pending</span></td><td>88%</td><td><span class="wf-icon">✎</span> <span class="wf-icon">🗑</span></td></tr>
+</table>
+
+<h3>Report Detail Page</h3>
+<div class="wf-box solid" style="margin-top:8px">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+<div class="wf-btn" style="font-size:11px">← Back</div>
+<span style="font-size:16px;font-weight:600;color:#555">Sales Dashboard</span>
+<span class="wf-badge" style="background:#e8f5e9;color:#4caf50">Certified</span>
+</div>
+<div class="wf-row">
+<div class="wf-col"><div class="wf-card"><div style="font-size:11px;color:#aaa">BI Tool</div><div style="color:#666">Power BI</div></div></div>
+<div class="wf-col"><div class="wf-card"><div style="font-size:11px;color:#aaa">Update Freq</div><div style="color:#666">Daily</div></div></div>
+<div class="wf-col"><div class="wf-card"><div style="font-size:11px;color:#aaa">Pages</div><div style="color:#666">5</div></div></div>
+<div class="wf-col"><div class="wf-card"><div style="font-size:11px;color:#aaa">Quality</div><div style="color:#666">96%</div></div></div>
+</div>
+<h3>Data Sources</h3>
+<table class="wf-table">
+<tr><th>Table</th><th>Layer</th><th>Type</th><th>Refresh</th></tr>
+<tr><td>fact_sales</td><td>DWH</td><td>Table</td><td>Daily</td></tr>
+</table>
+<h3>KPIs</h3>
+<table class="wf-table">
+<tr><th>KPI</th><th>Formula</th><th>Target</th><th>Current</th></tr>
+<tr><td>Monthly Revenue</td><td>SUM(amount)</td><td>$1M</td><td>$890K</td></tr>
+</table>
+</div>
+</section>
+
+<!-- 8. DATA LINEAGE -->
+<section class="wf-section" id="lineage">
+<span class="page-label">Page 8</span>
+<h2>Data Lineage</h2>
+<div class="wf-box solid" style="min-height:250px;position:relative">
+<span class="label">Lineage Flowchart (Mermaid)</span>
+<div style="display:flex;align-items:center;justify-content:center;gap:4px;padding:40px 0;flex-wrap:wrap">
+<div class="wf-flowchart-node" style="border-color:#6ba5e7">raw_customers</div>
+<span class="wf-arrow">→</span>
+<div class="wf-flowchart-node" style="border-color:#81c784;background:#f1f8e9">Transform:<br><span style="font-size:10px">clean & deduplicate</span></div>
+<span class="wf-arrow">→</span>
+<div class="wf-flowchart-node" style="border-color:#6ba5e7">stg_customers</div>
+<span class="wf-arrow">→</span>
+<div class="wf-flowchart-node" style="border-color:#81c784;background:#f1f8e9">Join:<br><span style="font-size:10px">LEFT JOIN regions</span></div>
+<span class="wf-arrow">→</span>
+<div class="wf-flowchart-node" style="border-color:#6ba5e7">dim_customers</div>
+</div>
+<div style="position:absolute;bottom:8px;right:8px">
+<div class="wf-minimap"><div class="viewport"></div></div>
+</div>
+</div>
+<div style="display:flex;gap:6px;margin-top:8px">
+<div class="wf-btn" style="font-size:11px">Zoom In</div>
+<div class="wf-btn" style="font-size:11px">Zoom Out</div>
+<div class="wf-btn" style="font-size:11px">Reset</div>
+</div>
+</section>
+
+<!-- 9. COLUMN MAPPER -->
+<section class="wf-section" id="mapper">
+<span class="page-label">Page 9</span>
+<h2>Column Mapper</h2>
+<div class="wf-row" style="justify-content:space-between;margin-bottom:12px">
+<div class="wf-btn primary" style="font-size:12px">+ New Mapping</div>
+</div>
+<div class="wf-row">
+<div class="wf-col">
+<div class="wf-box solid"><span class="label">Source Table</span>
+<div style="font-weight:600;color:#555;margin-bottom:8px">raw_customers</div>
+<div class="wf-card" style="font-size:12px;background:#e3f2fd">customer_id (INT)</div>
+<div class="wf-card" style="font-size:12px;background:#e3f2fd">first_name (VARCHAR)</div>
+<div class="wf-card" style="font-size:12px;background:#e3f2fd">last_name (VARCHAR)</div>
+<div class="wf-card" style="font-size:12px;background:#e3f2fd">email (VARCHAR)</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 8px">
+<div style="font-size:10px;color:#aaa;margin-bottom:4px">Mapping</div>
+<div style="color:#aaa;font-size:20px">⟶</div>
+<div style="color:#aaa;font-size:20px">⟶</div>
+<div style="color:#aaa;font-size:20px">⟶</div>
+</div>
+<div class="wf-col">
+<div class="wf-box solid"><span class="label">Target Table</span>
+<div style="font-weight:600;color:#555;margin-bottom:8px">dim_customers</div>
+<div class="wf-card" style="font-size:12px;background:#e8f5e9">cust_key (INT)</div>
+<div class="wf-card" style="font-size:12px;background:#e8f5e9">full_name (VARCHAR)</div>
+<div class="wf-card" style="font-size:12px;background:#e8f5e9">email_address (VARCHAR)</div>
+</div>
+</div>
+</div>
+<div class="wf-box solid" style="margin-top:8px">
+<span class="label">Join Conditions</span>
+<div style="font-size:12px;color:#888;padding:4px">raw_customers.region_id = dim_regions.region_id (LEFT JOIN)</div>
+</div>
+</section>
+
+<!-- 10. GOVERNANCE (Approve Flow) -->
+<section class="wf-section" id="governance">
+<span class="page-label">Page 10</span>
+<h2>Governance — Approve Flow</h2>
+
+<!-- Approval Flow Diagram -->
+<h3>Təsdiq Axını (Approval Flow)</h3>
+<div class="wf-box solid" style="padding:20px;text-align:center">
+<div style="display:flex;align-items:flex-start;justify-content:center;gap:0;flex-wrap:wrap">
+<!-- Step 1: Submit -->
+<div style="text-align:center;min-width:130px">
+<div class="wf-card" style="background:#fff3e0;border-color:#ffcc80;display:inline-block;min-width:120px">
+<div style="font-size:24px;margin-bottom:4px">📝</div>
+<div style="font-size:13px;font-weight:600;color:#e65100">Draft</div>
+<div style="font-size:10px;color:#aaa;margin-top:4px">Termin yaradılır</div>
+</div>
+<div style="font-size:10px;color:#888;margin-top:4px">Data Steward</div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 4px 0">
+<span style="color:#bbb;font-size:22px">→</span>
+</div>
+<!-- Step 2: Review -->
+<div style="text-align:center;min-width:130px">
+<div class="wf-card" style="background:#e3f2fd;border-color:#90caf9;display:inline-block;min-width:120px">
+<div style="font-size:24px;margin-bottom:4px">🔍</div>
+<div style="font-size:13px;font-weight:600;color:#1565c0">Review</div>
+<div style="font-size:10px;color:#aaa;margin-top:4px">Yoxlanılır</div>
+</div>
+<div style="font-size:10px;color:#888;margin-top:4px">Gov Manager</div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 4px 0">
+<span style="color:#bbb;font-size:22px">→</span>
+</div>
+<!-- Step 3: Approved -->
+<div style="text-align:center;min-width:130px">
+<div class="wf-card" style="background:#e8f5e9;border-color:#a5d6a7;display:inline-block;min-width:120px">
+<div style="font-size:24px;margin-bottom:4px">✅</div>
+<div style="font-size:13px;font-weight:600;color:#2e7d32">Approved</div>
+<div style="font-size:10px;color:#aaa;margin-top:4px">Təsdiqləndi</div>
+</div>
+<div style="font-size:10px;color:#888;margin-top:4px">Gov Manager</div>
+</div>
+</div>
+<!-- Reject path -->
+<div style="margin-top:16px;display:flex;align-items:center;justify-content:center;gap:8px">
+<div style="border:2px dashed #ef9a9a;border-radius:6px;padding:6px 14px;background:#ffebee;display:inline-flex;align-items:center;gap:6px">
+<span style="font-size:16px">❌</span>
+<div style="text-align:left">
+<div style="font-size:12px;font-weight:600;color:#c62828">Rejected</div>
+<div style="font-size:10px;color:#999">Review-dan Draft-a qaytarılır</div>
+</div>
+</div>
+<span style="color:#ef9a9a;font-size:14px">← ← ←</span>
+<span style="font-size:10px;color:#aaa">Review mərhələsindən</span>
+</div>
+</div>
+
+<!-- Pending Approvals Table -->
+<h3>Təsdiq Gözləyən Elementlər</h3>
+<table class="wf-table">
+<tr><th>Element</th><th>Tip</th><th>Təqdim edən</th><th>Tarix</th><th>Cari Mərhələ</th><th>Əməliyyat</th></tr>
+<tr>
+<td style="color:#555">Customer ID</td>
+<td><span class="wf-badge">Term</span></td>
+<td>steward.finance</td>
+<td>2024-01-18</td>
+<td><span class="wf-badge" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9">Review</span></td>
+<td>
+<span class="wf-btn primary" style="font-size:10px;padding:4px 10px;background:#2e7d32;border-color:#2e7d32">Approve</span>
+<span class="wf-btn" style="font-size:10px;padding:4px 10px;background:#ffebee;color:#c62828;border-color:#ef9a9a">Reject</span>
+</td>
+</tr>
+<tr>
+<td style="color:#555">Churn Rate</td>
+<td><span class="wf-badge">Term</span></td>
+<td>steward.hr</td>
+<td>2024-01-19</td>
+<td><span class="wf-badge" style="background:#e3f2fd;color:#1565c0;border-color:#90caf9">Review</span></td>
+<td>
+<span class="wf-btn primary" style="font-size:10px;padding:4px 10px;background:#2e7d32;border-color:#2e7d32">Approve</span>
+<span class="wf-btn" style="font-size:10px;padding:4px 10px;background:#ffebee;color:#c62828;border-color:#ef9a9a">Reject</span>
+</td>
+</tr>
+<tr>
+<td style="color:#555">Net Revenue</td>
+<td><span class="wf-badge">Term</span></td>
+<td>analyst.sales</td>
+<td>2024-01-20</td>
+<td><span class="wf-badge" style="background:#fff3e0;color:#e65100;border-color:#ffcc80">Draft</span></td>
+<td>
+<span class="wf-btn" style="font-size:10px;padding:4px 10px;color:#aaa">Gözləyir...</span>
+</td>
+</tr>
+</table>
+
+<!-- Approval History -->
+<h3>Təsdiq Tarixçəsi</h3>
+<table class="wf-table">
+<tr><th>Element</th><th>Əməliyyat</th><th>Kim tərəfindən</th><th>Tarix</th><th>Qeyd</th></tr>
+<tr>
+<td style="color:#555">Revenue</td>
+<td><span class="wf-badge" style="background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7">Approved</span></td>
+<td>governance.manager</td>
+<td>2024-01-15</td>
+<td style="font-size:12px;color:#888">Təsdiq edildi, finance domain-ə uyğundur</td>
+</tr>
+<tr>
+<td style="color:#555">Old Metric</td>
+<td><span class="wf-badge" style="background:#ffebee;color:#c62828;border-color:#ef9a9a">Rejected</span></td>
+<td>governance.manager</td>
+<td>2024-01-14</td>
+<td style="font-size:12px;color:#888">Dublikat termin, Revenue ilə eynidir</td>
+</tr>
+<tr>
+<td style="color:#555">Active Users</td>
+<td><span class="wf-badge" style="background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7">Approved</span></td>
+<td>governance.manager</td>
+<td>2024-01-12</td>
+<td style="font-size:12px;color:#888">—</td>
+</tr>
+</table>
+
+<!-- Role Permissions in Flow -->
+<h3>Approve Flow-da Rollar</h3>
+<div class="wf-row" style="gap:12px">
+<div class="wf-card" style="flex:1;border-left:4px solid #ff9800">
+<div style="font-size:14px;font-weight:600;color:#555;margin-bottom:6px">📚 Data Steward</div>
+<div style="font-size:11px;color:#888;line-height:1.6">
+- Yeni termin yarada bilər (Draft)<br>
+- Review-a göndərə bilər<br>
+- Reject olunmuş termini düzəldib yenidən göndərə bilər
+</div>
+</div>
+<div class="wf-card" style="flex:1;border-left:4px solid #2196f3">
+<div style="font-size:14px;font-weight:600;color:#555;margin-bottom:6px">🔒 Gov Manager</div>
+<div style="font-size:11px;color:#888;line-height:1.6">
+- Review mərhələsində yoxlayır<br>
+- Approve edə bilər (Approved statusuna keçir)<br>
+- Reject edə bilər (Draft-a qaytarılır, qeyd əlavə olunur)
+</div>
+</div>
+<div class="wf-card" style="flex:1;border-left:4px solid #4caf50">
+<div style="font-size:14px;font-weight:600;color:#555;margin-bottom:6px">👑 Super Admin</div>
+<div style="font-size:11px;color:#888;line-height:1.6">
+- Bütün mərhələlərdə müdaxilə edə bilər<br>
+- Birbaşa Approve/Reject edə bilər<br>
+- Workflow parametrlərini dəyişə bilər
+</div>
+</div>
+</div>
+</section>
+
+<!-- 11. USERS -->
+<section class="wf-section" id="users">
+<span class="page-label">Page 11</span>
+<h2>Users Management</h2>
+<div class="wf-row" style="justify-content:space-between;align-items:center;margin-bottom:12px">
+<div class="wf-input" style="max-width:250px;font-size:12px">🔍 Search users...</div>
+<div class="wf-btn primary" style="font-size:12px">+ Create User</div>
+</div>
+<table class="wf-table">
+<tr><th></th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr>
+<tr><td><div class="wf-avatar" style="width:28px;height:28px;font-size:10px">AK</div></td><td style="color:#555">admin</td><td>admin@example.com</td><td><span class="wf-badge">Super Admin</span></td><td><span class="wf-badge" style="background:#e8f5e9;color:#4caf50">Active</span></td><td>2024-01-20</td><td><span class="wf-icon">✎</span> <span class="wf-icon">🗑</span></td></tr>
+<tr><td><div class="wf-avatar" style="width:28px;height:28px;font-size:10px">GM</div></td><td style="color:#555">governance.manager</td><td>gov@example.com</td><td><span class="wf-badge">Gov Manager</span></td><td><span class="wf-badge" style="background:#e8f5e9;color:#4caf50">Active</span></td><td>2024-01-19</td><td><span class="wf-icon">✎</span> <span class="wf-icon">🗑</span></td></tr>
+</table>
+</section>
+
+<!-- 12. ROLES -->
+<section class="wf-section" id="roles">
+<span class="page-label">Page 12</span>
+<h2>Roles Management</h2>
+<div class="wf-row" style="justify-content:flex-end;margin-bottom:12px">
+<div class="wf-btn primary" style="font-size:12px">+ Create Role</div>
+</div>
+<table class="wf-table">
+<tr><th>Role</th><th>Code</th><th>Users</th><th>Permissions</th><th>Status</th><th>Actions</th></tr>
+<tr><td style="color:#555">Super Administrator</td><td>SUPER_ADMIN</td><td>1</td><td>53</td><td><span class="wf-badge" style="background:#e8f5e9;color:#4caf50">Active</span></td><td><span class="wf-icon">✎</span></td></tr>
+<tr><td style="color:#555">Data Governance Manager</td><td>GOV_MANAGER</td><td>2</td><td>28</td><td><span class="wf-badge" style="background:#e8f5e9;color:#4caf50">Active</span></td><td><span class="wf-icon">✎</span></td></tr>
+<tr><td style="color:#555">Report Viewer</td><td>VIEWER</td><td>3</td><td>8</td><td><span class="wf-badge" style="background:#e8f5e9;color:#4caf50">Active</span></td><td><span class="wf-icon">✎</span></td></tr>
+</table>
+<h3>Permission Matrix</h3>
+<table class="wf-table" style="font-size:11px">
+<tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th><th>Approve</th></tr>
+<tr><td>Catalog</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr>
+<tr><td>Glossary</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td>Quality</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td>Reports</td><td>✓</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+</table>
+</section>
+
+<!-- 13. SETTINGS -->
+<section class="wf-section" id="settings">
+<span class="page-label">Page 13</span>
+<h2>Settings</h2>
+<div class="wf-box solid" style="margin-bottom:12px">
+<span class="label">General Settings</span>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:12px;color:#888;margin-bottom:4px">Application Name</div><div class="wf-input" style="font-size:12px">Platform</div></div>
+<div class="wf-col"><div style="font-size:12px;color:#888;margin-bottom:4px">Default Language</div><div class="wf-input" style="font-size:12px">Azərbaycan</div></div>
+</div>
+</div>
+<div class="wf-box solid" style="margin-bottom:12px">
+<span class="label">Authentication</span>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:12px;color:#888;margin-bottom:4px">Session Timeout (min)</div><div class="wf-input" style="font-size:12px">30</div></div>
+<div class="wf-col"><div style="font-size:12px;color:#888;margin-bottom:4px">Max Login Attempts</div><div class="wf-input" style="font-size:12px">5</div></div>
+</div>
+</div>
+<div class="wf-box solid" style="margin-bottom:12px">
+<span class="label">Data Quality</span>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:12px;color:#888;margin-bottom:4px">Soda Server URL</div><div class="wf-input" style="font-size:12px">http://localhost:5001</div></div>
+<div class="wf-col"><div style="font-size:12px;color:#888;margin-bottom:4px">Auto-scan Interval</div><div class="wf-input" style="font-size:12px">Daily</div></div>
+</div>
+</div>
+<div style="margin-top:12px"><div class="wf-btn primary">Save Settings</div></div>
+</section>
+
+<!-- 14. MODALS -->
+<section class="wf-section" id="modals">
+<span class="page-label">Page 14</span>
+<h2>All Modals — Insert / Update / Delete</h2>
+<p style="color:#777;font-size:12px;margin-bottom:16px">Hər modul üçün yaratma, redaktə, silmə, baxış və iş axını (workflow) modalları. Bütün modallar `.wf-modal` CSS şablonundan istifadə edir.</p>
+
+<!-- ============ GLOSSARY MODALS ============ -->
+<div id="modals-glossary" style="border-top:3px solid #4f46e5;padding-top:20px;margin-top:20px">
+<h2 style="color:#4f46e5;font-size:18px;border:none">📖 Business Glossary Modals</h2>
+
+<h3 style="margin-top:12px">1) Add Term — INSERT</h3>
+<div class="wf-modal">
+<div class="modal-header"><span>➕ Add New Term</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Term Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Abbreviation</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Domain</div><div class="wf-input" style="font-size:12px">Select domain...</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Business Definition *</div><div class="wf-input" style="font-size:12px;min-height:50px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Technical Description</div><div class="wf-input" style="font-size:12px;min-height:40px"></div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Data Type</div><div class="wf-input" style="font-size:12px">DECIMAL(10,2)</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Owner *</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Stewards (comma-separated emails)</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Synonyms</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Example / Formula</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Status</div><div class="wf-input" style="font-size:12px">Draft</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Save Term</div></div>
+</div>
+
+<h3 style="margin-top:20px">2) Edit Term — UPDATE</h3>
+<div class="wf-modal">
+<div class="modal-header"><span>✏️ Edit Term — Customer Lifetime Value</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:8px;margin-bottom:12px;font-size:11px;color:#92400e">Last modified: 2026-04-15 by steward@corp.com</div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Term Name *</div><div class="wf-input" style="font-size:12px;color:#555">Customer Lifetime Value</div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Abbreviation</div><div class="wf-input" style="font-size:12px;color:#555">CLV</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Domain</div><div class="wf-input" style="font-size:12px;color:#555">Sales</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Business Definition *</div><div class="wf-input" style="font-size:12px;color:#555;min-height:50px">Müştərinin platforma üzrə ömürlük gətirdiyi gəlirin proqnozu...</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Physical Attributes (JSON)</div><div class="wf-input" style="font-size:11px;color:#555;font-family:monospace">[{"layer":"mart","table":"fact_customer","column":"ltv_score"}]</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Related Quality Rules</div><div class="wf-input" style="font-size:12px;color:#555">RULE-001, RULE-042</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn" style="font-size:12px;border-color:#6366f1;color:#6366f1">View History</div><div class="wf-btn primary" style="font-size:12px">Save Changes</div></div>
+</div>
+
+<h3 style="margin-top:20px">3) Delete Term — DELETE Confirmation</h3>
+<div class="wf-modal" style="max-width:450px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Delete Term</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="text-align:center;padding:12px 0">
+<div style="font-size:32px;margin-bottom:8px">🗑️</div>
+<div style="font-weight:600;color:#333;margin-bottom:6px">"Customer Lifetime Value" terminini silmək istədiyinizə əminsiniz?</div>
+<div style="font-size:12px;color:#888">Bu termin 3 hesabatda və 5 KPI-da istifadə olunur.</div>
+</div>
+<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:8px;margin-top:12px;font-size:11px;color:#92400e"><strong>Qeyd:</strong> Soft delete — termin 30 gün ərzində bərpa oluna bilər.</div>
+<div style="margin-top:12px"><div style="font-size:11px;color:#888;margin-bottom:4px">Delete Reason *</div><div class="wf-input" style="font-size:12px;min-height:40px"></div></div>
+<div style="margin-top:8px;display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border:2px solid #999;border-radius:2px"></div><div style="font-size:12px;color:#555">Hard delete (fiziki silinmə — geri qaytarıla bilməz)</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Delete Term</div></div>
+</div>
+
+<h3 style="margin-top:20px">4) View Term Details — READ</h3>
+<div class="wf-modal" style="max-width:600px">
+<div class="modal-header"><span>👁️ Customer Lifetime Value</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="display:flex;gap:6px;margin-bottom:12px">
+<span class="wf-badge" style="background:#dcfce7;color:#166534;border-color:#86efac">✓ Approved</span>
+<span class="wf-badge" style="background:#dbeafe;color:#1e40af;border-color:#93c5fd">Sales</span>
+<span class="wf-badge" style="background:#f3e8ff;color:#6b21a8;border-color:#d8b4fe">DECIMAL(10,2)</span>
+</div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:2px">Business Definition</div><div style="font-size:12px;color:#333">Müştərinin platforma üzrə ömürlük gətirdiyi gəlirin proqnozu.</div></div>
+<div class="wf-row" style="margin:8px 0">
+<div class="wf-col"><div style="font-size:11px;color:#888">Owner</div><div style="font-size:12px;color:#333">ceo@corp.com</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888">Stewards</div><div style="font-size:12px;color:#333">s1@corp.com, s2@corp.com</div></div>
+</div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:2px">Physical Attributes</div><div style="font-size:11px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;padding:6px;font-family:monospace;color:#555">mart.fact_customer.ltv_score</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:2px">Linked Reports (3)</div><div style="font-size:12px;color:#6366f1">Sales Executive, Customer 360, Revenue Forecast</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:2px">Quality Rules</div><div style="font-size:12px;color:#333">RULE-001 (98.5%), RULE-042 (100%)</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Close</div><div class="wf-btn" style="font-size:12px">Edit</div><div class="wf-btn primary" style="font-size:12px">Advance Status</div></div>
+</div>
+
+<h3 style="margin-top:20px">5) Term History</h3>
+<div class="wf-modal" style="max-width:550px">
+<div class="modal-header"><span>🕐 Term History — Customer Lifetime Value</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body" style="max-height:350px;overflow-y:auto">
+<div style="border-left:3px solid #10b981;padding:8px 12px;margin-bottom:8px;background:#f0fdf4">
+<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;font-size:12px">status_change → approved</span><span style="font-size:10px;color:#888">2026-04-15 14:22</span></div>
+<div style="font-size:11px;color:#555">by: gov_manager@corp.com</div>
+<div style="font-size:11px;color:#666;margin-top:4px">"Approved after steward review"</div>
+</div>
+<div style="border-left:3px solid #f59e0b;padding:8px 12px;margin-bottom:8px;background:#fffbeb">
+<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;font-size:12px">status_change → under_review</span><span style="font-size:10px;color:#888">2026-04-10 09:15</span></div>
+<div style="font-size:11px;color:#555">by: steward@corp.com</div>
+</div>
+<div style="border-left:3px solid #6366f1;padding:8px 12px;margin-bottom:8px;background:#eef2ff">
+<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;font-size:12px">update → definition changed</span><span style="font-size:10px;color:#888">2026-04-08 11:30</span></div>
+<div style="font-size:11px;color:#555">by: steward@corp.com</div>
+</div>
+<div style="border-left:3px solid #94a3b8;padding:8px 12px;background:#f8fafc">
+<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-weight:600;font-size:12px">Yaradıldı</span><span style="font-size:10px;color:#888">2026-04-01 08:00</span></div>
+<div style="font-size:11px;color:#555">by: analyst@corp.com</div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn primary" style="font-size:12px">Close</div></div>
+</div>
+
+<h3 style="margin-top:20px">6) Restore Term (Soft-Delete Recovery)</h3>
+<div class="wf-modal" style="max-width:450px">
+<div class="modal-header" style="background:#ecfdf5;border-bottom-color:#86efac;color:#166534"><span>♻️ Restore Deleted Term</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="text-align:center;padding:8px 0"><div style="font-size:14px;color:#333;margin-bottom:6px"><strong>"Gross Margin"</strong> terminini bərpa etmək istəyirsiniz?</div></div>
+<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:4px;padding:8px;margin:8px 0;font-size:11px;color:#166534">Silinib: 2026-03-12 by admin@corp.com<br>Səbəb: "Dublikat termin"</div>
+<div style="margin-top:12px"><div style="font-size:11px;color:#888;margin-bottom:4px">Restore status</div><div class="wf-input" style="font-size:12px">draft</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#10b981;border-color:#059669">Restore</div></div>
+</div>
+
+<h3 style="margin-top:20px">7) Workflow Action — Approve / Reject</h3>
+<div class="wf-modal" style="max-width:450px">
+<div class="modal-header"><span>🔄 Advance Workflow Status</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="padding:8px 0;display:flex;align-items:center;justify-content:center;gap:8px">
+<span class="wf-badge" style="background:#fef3c7;color:#92400e;border-color:#fcd34d">under_review</span>
+<span class="wf-arrow">→</span>
+<span class="wf-badge" style="background:#dcfce7;color:#166534;border-color:#86efac">approved</span>
+</div>
+<div style="margin:12px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Decision</div>
+<div style="display:flex;gap:8px"><div class="wf-btn primary" style="flex:1;font-size:12px;background:#10b981;border-color:#059669">✓ Approve</div><div class="wf-btn" style="flex:1;font-size:12px;background:#fee2e2;color:#991b1b;border-color:#fca5a5">✗ Reject</div></div></div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Comment / Reason</div><div class="wf-input" style="font-size:12px;min-height:50px"></div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Submit Decision</div></div>
+</div>
+
+</div>
+
+<!-- ============ DATA CATALOG MODALS ============ -->
+<div id="modals-catalog" style="border-top:3px solid #10b981;padding-top:20px;margin-top:30px">
+<h2 style="color:#10b981;font-size:18px;border:none">🗄️ Data Catalog Modals</h2>
+
+<h3 style="margin-top:12px">1) Add Layer — INSERT</h3>
+<div class="wf-modal" style="max-width:450px">
+<div class="modal-header"><span>➕ Add Catalog Layer</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Layer Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Icon</div><div class="wf-input" style="font-size:12px">📁</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Color</div><div class="wf-input" style="font-size:12px">#6366f1</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Order</div><div class="wf-input" style="font-size:12px">0</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Description</div><div class="wf-input" style="font-size:12px;min-height:40px"></div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Create Layer</div></div>
+</div>
+
+<h3 style="margin-top:20px">2) Edit Layer — UPDATE</h3>
+<div class="wf-modal" style="max-width:450px">
+<div class="modal-header"><span>✏️ Edit Layer — Mart</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Layer Name *</div><div class="wf-input" style="font-size:12px;color:#555">Mart</div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Icon</div><div class="wf-input" style="font-size:12px;color:#555">🎯</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Color</div><div class="wf-input" style="font-size:12px;color:#555">#10b981</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Order</div><div class="wf-input" style="font-size:12px;color:#555">3</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Description</div><div class="wf-input" style="font-size:12px;color:#555;min-height:40px">Business-facing marts</div></div>
+<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:6px;font-size:11px;color:#0369a1">📊 Bu layer-də 24 cədvəl və 187 sütun var</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Save Changes</div></div>
+</div>
+
+<h3 style="margin-top:20px">3) Delete Layer — Cascade Confirmation</h3>
+<div class="wf-modal" style="max-width:470px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Delete Layer</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="text-align:center;padding:8px 0">
+<div style="font-size:32px;margin-bottom:8px">🗑️</div>
+<div style="font-weight:600;color:#333;margin-bottom:6px">"Mart" layer-ini silmək?</div>
+</div>
+<div style="background:#fee2e2;border:2px solid #fca5a5;border-radius:4px;padding:10px;margin:10px 0;font-size:12px;color:#991b1b">
+<strong>⚠️ CASCADE DELETE:</strong>
+<div style="margin-top:6px">• 24 cədvəl silinəcək</div>
+<div>• 187 sütun silinəcək</div>
+<div>• 12 column mapping qırılacaq</div>
+<div>• 3 hesabatda data source-u orphan olacaq</div>
+</div>
+<div style="margin-top:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Təsdiq üçün "DELETE" yazın</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Delete Layer</div></div>
+</div>
+
+<h3 style="margin-top:20px">4) Add Table — INSERT</h3>
+<div class="wf-modal">
+<div class="modal-header"><span>➕ Add Table to Catalog</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Layer *</div><div class="wf-input" style="font-size:12px">Select layer...</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">External Source</div><div class="wf-input" style="font-size:12px">None (manual)</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Table Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Schema Name</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Object Type</div><div class="wf-input" style="font-size:12px">TABLE</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Description</div><div class="wf-input" style="font-size:12px;min-height:40px"></div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Row Count</div><div class="wf-input" style="font-size:12px">0</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Owner</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Create Table</div></div>
+</div>
+
+<h3 style="margin-top:20px">5) Edit Table — UPDATE</h3>
+<div class="wf-modal">
+<div class="modal-header"><span>✏️ Edit Table — fact_sales</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:6px;margin-bottom:10px;font-size:11px;color:#0369a1">📊 Son profil: 2026-04-18 | Həqiqi satırlar: 1,500,342 | Sütunlar: 12</div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Table Name *</div><div class="wf-input" style="font-size:12px;color:#555">fact_sales</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Description</div><div class="wf-input" style="font-size:12px;color:#555;min-height:40px">Daily sales fact table — granularity: customer × product × day</div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Row Count</div><div class="wf-input" style="font-size:12px;color:#555">1500342</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Owner</div><div class="wf-input" style="font-size:12px;color:#555">dwh_team</div></div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn" style="font-size:12px">Profile Now</div><div class="wf-btn primary" style="font-size:12px">Save</div></div>
+</div>
+
+<h3 style="margin-top:20px">6) Delete Table — Confirmation</h3>
+<div class="wf-modal" style="max-width:450px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Delete Table</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="text-align:center;padding:8px 0">
+<div style="font-size:32px;margin-bottom:8px">🗑️</div>
+<div style="font-weight:600;color:#333">"fact_sales" cədvəlini silmək?</div>
+</div>
+<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:8px;margin-top:12px;font-size:11px;color:#92400e">
+<strong>Təsir:</strong><br>• 12 sütun kaskadla silinəcək<br>• 8 mapping, 3 hesabat data source-u qırılacaq
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Delete Table</div></div>
+</div>
+
+<h3 style="margin-top:20px">7) Add Column — INSERT</h3>
+<div class="wf-modal" style="max-width:500px">
+<div class="modal-header"><span>➕ Add Column to fact_sales</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Column Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Data Type *</div><div class="wf-input" style="font-size:12px">VARCHAR(255)</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Order</div><div class="wf-input" style="font-size:12px">0</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Description</div><div class="wf-input" style="font-size:12px;min-height:40px"></div></div>
+<div class="wf-row" style="margin:8px 0">
+<div class="wf-col" style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border:2px solid #999;border-radius:2px"></div><div style="font-size:12px;color:#555">Primary Key</div></div>
+<div class="wf-col" style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border:2px solid #999;border-radius:2px"></div><div style="font-size:12px;color:#555">Foreign Key</div></div>
+<div class="wf-col" style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border:2px solid #999;background:#4f46e5;border-radius:2px"></div><div style="font-size:12px;color:#555">Nullable</div></div>
+</div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Icon</div><div class="wf-input" style="font-size:12px">📊</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Add Column</div></div>
+</div>
+
+<h3 style="margin-top:20px">8) Delete Column — Confirmation</h3>
+<div class="wf-modal" style="max-width:450px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Delete Column</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="text-align:center;padding:8px 0">
+<div style="font-size:32px;margin-bottom:8px">🗑️</div>
+<div style="font-weight:600;color:#333">"customer_id" sütununu silmək?</div>
+<div style="font-size:12px;color:#888;margin-top:4px">fact_sales cədvəlindən</div>
+</div>
+<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:8px;margin-top:12px;font-size:11px;color:#92400e">Bu sütun 2 mapping, 1 glossary term-də referans edilir.</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Delete Column</div></div>
+</div>
+
+<h3 style="margin-top:20px">9) Profile Table — Live Stats (READ)</h3>
+<div class="wf-modal" style="max-width:650px">
+<div class="modal-header"><span>📊 Profile: fact_sales</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:8px;margin-bottom:10px;font-size:11px;color:#0369a1">🔄 Live profiling via: prod-dwh (PostgreSQL)</div>
+<div class="wf-row" style="margin-bottom:12px">
+<div class="wf-col" style="background:#f9fafb;border:1px solid #e5e7eb;padding:8px;border-radius:4px;text-align:center"><div style="font-size:10px;color:#888">ROW COUNT</div><div style="font-weight:600;color:#333;font-size:16px">1,500,342</div></div>
+<div class="wf-col" style="background:#f9fafb;border:1px solid #e5e7eb;padding:8px;border-radius:4px;text-align:center"><div style="font-size:10px;color:#888">COLUMNS</div><div style="font-weight:600;color:#333;font-size:16px">12</div></div>
+<div class="wf-col" style="background:#f9fafb;border:1px solid #e5e7eb;padding:8px;border-radius:4px;text-align:center"><div style="font-size:10px;color:#888">SIZE</div><div style="font-weight:600;color:#333;font-size:16px">245 MB</div></div>
+<div class="wf-col" style="background:#f9fafb;border:1px solid #e5e7eb;padding:8px;border-radius:4px;text-align:center"><div style="font-size:10px;color:#888">DURATION</div><div style="font-weight:600;color:#333;font-size:16px">2.3s</div></div>
+</div>
+<div style="font-size:11px;color:#888;margin-bottom:6px">Column Statistics</div>
+<div style="border:1px solid #e5e7eb;border-radius:4px;overflow:hidden">
+<div style="background:#f9fafb;padding:6px 10px;display:grid;grid-template-columns:1.5fr 1fr 0.8fr 0.8fr 1fr;gap:8px;font-size:10px;color:#888;font-weight:600">
+<div>COLUMN</div><div>TYPE</div><div>NULLS %</div><div>DISTINCT</div><div>MIN - MAX</div>
+</div>
+<div style="padding:6px 10px;display:grid;grid-template-columns:1.5fr 1fr 0.8fr 0.8fr 1fr;gap:8px;font-size:11px;border-top:1px solid #e5e7eb"><div>customer_id</div><div style="color:#6366f1">INT</div><div>0.0%</div><div>9,855</div><div>1 - 9855</div></div>
+<div style="padding:6px 10px;display:grid;grid-template-columns:1.5fr 1fr 0.8fr 0.8fr 1fr;gap:8px;font-size:11px;border-top:1px solid #e5e7eb"><div>amount</div><div style="color:#6366f1">DECIMAL</div><div>0.2%</div><div>45,233</div><div>0.00 - 9999.99</div></div>
+<div style="padding:6px 10px;display:grid;grid-template-columns:1.5fr 1fr 0.8fr 0.8fr 1fr;gap:8px;font-size:11px;border-top:1px solid #e5e7eb"><div>order_date</div><div style="color:#6366f1">DATE</div><div>0.0%</div><div>1,095</div><div>2023-01-01 - 2026-04-18</div></div>
+<div style="padding:6px 10px;display:grid;grid-template-columns:1.5fr 1fr 0.8fr 0.8fr 1fr;gap:8px;font-size:11px;border-top:1px solid #e5e7eb"><div>status</div><div style="color:#6366f1">VARCHAR</div><div>1.8%</div><div>4</div><div>cancelled - shipped</div></div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Close</div><div class="wf-btn" style="font-size:12px">Export</div><div class="wf-btn primary" style="font-size:12px">Refresh</div></div>
+</div>
+
+<h3 style="margin-top:20px">10) Import from External Source — Bulk INSERT</h3>
+<div class="wf-modal" style="max-width:600px">
+<div class="modal-header"><span>📥 Import Tables from External Source</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Source *</div><div class="wf-input" style="font-size:12px">prod-dwh (PostgreSQL)</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Target Layer</div><div class="wf-input" style="font-size:12px">Auto (by schema name)</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Search Tables</div><div class="wf-input" style="font-size:12px">🔍 Filter by name...</div></div>
+<div style="max-height:200px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px">
+<div style="padding:6px 10px;display:flex;align-items:center;gap:8px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:10px;color:#888;font-weight:600"><div style="width:14px"></div><div style="flex:1">TABLE</div><div style="width:80px">SCHEMA</div><div style="width:80px">ROWS</div><div style="width:60px">STATUS</div></div>
+<div style="padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e5e7eb;font-size:11px"><div style="width:14px;height:14px;border:2px solid #4f46e5;background:#4f46e5;border-radius:2px"></div><div style="flex:1">orders</div><div style="width:80px;color:#888">public</div><div style="width:80px;color:#888">150,000</div><div style="width:60px;color:#10b981">✓ new</div></div>
+<div style="padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e5e7eb;font-size:11px"><div style="width:14px;height:14px;border:2px solid #4f46e5;background:#4f46e5;border-radius:2px"></div><div style="flex:1">customers</div><div style="width:80px;color:#888">public</div><div style="width:80px;color:#888">9,855</div><div style="width:60px;color:#f59e0b">↻ update</div></div>
+<div style="padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #e5e7eb;font-size:11px"><div style="width:14px;height:14px;border:2px solid #999;border-radius:2px"></div><div style="flex:1">products</div><div style="width:80px;color:#888">public</div><div style="width:80px;color:#888">542</div><div style="width:60px;color:#888">skip</div></div>
+<div style="padding:6px 10px;display:flex;align-items:center;gap:8px;font-size:11px"><div style="width:14px;height:14px;border:2px solid #4f46e5;background:#4f46e5;border-radius:2px"></div><div style="flex:1">order_items</div><div style="width:80px;color:#888">public</div><div style="width:80px;color:#888">450,100</div><div style="width:60px;color:#10b981">✓ new</div></div>
+</div>
+<div style="margin-top:8px;font-size:11px;color:#555">3 seçildi / 4 cəmi — təxminən 610,000 sətir, 38 sütun idxal olunacaq</div>
+<div class="wf-row" style="margin-top:8px">
+<div class="wf-col" style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border:2px solid #999;background:#4f46e5;border-radius:2px"></div><div style="font-size:12px;color:#555">Sütunları da idxal et</div></div>
+<div class="wf-col" style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border:2px solid #999;border-radius:2px"></div><div style="font-size:12px;color:#555">Row count yenilə</div></div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#10b981;border-color:#059669">Import Selected</div></div>
+</div>
+
+</div>
+
+<!-- ============ REPORTS MODALS ============ -->
+<div id="modals-reports" style="border-top:3px solid #f59e0b;padding-top:20px;margin-top:30px">
+<h2 style="color:#f59e0b;font-size:18px;border:none">📋 Reporting Catalog Modals</h2>
+
+<h3 style="margin-top:12px">1) Add Report — INSERT</h3>
+<div class="wf-modal" style="max-width:650px">
+<div class="modal-header"><span>➕ Create New Report</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body" style="max-height:400px;overflow-y:auto">
+<div style="font-size:11px;color:#6366f1;font-weight:600;margin-bottom:6px">◆ Basic Info</div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Report ID</div><div class="wf-input" style="font-size:12px;color:#aaa">Auto: RPT-0042</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Report Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+<div class="wf-row" style="margin-top:8px">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Domain *</div><div class="wf-input" style="font-size:12px">Sales</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Sub Domain</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Report Type</div><div class="wf-input" style="font-size:12px">analytical</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Short Description</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Business Purpose</div><div class="wf-input" style="font-size:12px;min-height:40px"></div></div>
+
+<div style="font-size:11px;color:#6366f1;font-weight:600;margin:12px 0 6px">◆ Ownership</div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Business Owner *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Data Owner</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+<div class="wf-row" style="margin-top:8px">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Technical Owner</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Data Steward</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+
+<div style="font-size:11px;color:#6366f1;font-weight:600;margin:12px 0 6px">◆ BI Tool & Location</div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">BI Tool</div><div class="wf-input" style="font-size:12px">power_bi</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Version</div><div class="wf-input" style="font-size:12px">1.0</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Update Frequency</div><div class="wf-input" style="font-size:12px">daily</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Dashboard URL</div><div class="wf-input" style="font-size:12px">https://app.powerbi.com/...</div></div>
+
+<div style="font-size:11px;color:#6366f1;font-weight:600;margin:12px 0 6px">◆ Compliance</div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Access Level</div><div class="wf-input" style="font-size:12px">restricted</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Certification</div><div class="wf-input" style="font-size:12px">draft</div></div>
+</div>
+<div class="wf-row" style="margin-top:8px">
+<div class="wf-col" style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border:2px solid #999;border-radius:2px"></div><div style="font-size:12px;color:#555">Has PII</div></div>
+<div class="wf-col" style="display:flex;align-items:center;gap:6px"><div style="width:14px;height:14px;border:2px solid #999;border-radius:2px"></div><div style="font-size:12px;color:#555">Has Financial Data</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Regulatory Flags</div><div class="wf-input" style="font-size:12px">GDPR, SOX</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn" style="font-size:12px">Save as Draft</div><div class="wf-btn primary" style="font-size:12px">Create Report</div></div>
+</div>
+
+<h3 style="margin-top:20px">2) Edit Report — UPDATE (Partial)</h3>
+<div class="wf-modal" style="max-width:600px">
+<div class="modal-header"><span>✏️ Edit — Sales Executive Dashboard</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:6px;margin-bottom:10px;font-size:11px;color:#92400e">ℹ️ Yalnız dəyişdirdiyin sahələr yenilənəcək (partial update)</div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Report Name</div><div class="wf-input" style="font-size:12px;color:#555">Sales Executive Dashboard</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Version</div><div class="wf-input" style="font-size:12px;color:#555">1.2</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Short Description</div><div class="wf-input" style="font-size:12px;color:#555">Executive sales overview — MTD/YTD</div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Certification</div><div class="wf-input" style="font-size:12px;color:#555">certified</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Quality Score</div><div class="wf-input" style="font-size:12px;color:#555">96.5</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Known Issues</div><div class="wf-input" style="font-size:12px;color:#555;min-height:40px">— Q1 data refresh 15 dəqiqə gecikir<br>— Currency convert yalnız USD/EUR</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Save Changes</div></div>
+</div>
+
+<h3 style="margin-top:20px">3) Delete Report — Cascade Confirmation</h3>
+<div class="wf-modal" style="max-width:470px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Delete Report</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="text-align:center;padding:8px 0">
+<div style="font-size:32px;margin-bottom:8px">🗑️</div>
+<div style="font-weight:600;color:#333">"Sales Executive Dashboard" silinsin?</div>
+</div>
+<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:4px;padding:8px;margin:10px 0;font-size:11px;color:#991b1b">
+<strong>CASCADE silinəcək:</strong>
+<div style="margin-top:4px">• 5 data source əlaqəsi</div>
+<div>• 12 KPI tərifi</div>
+<div>• 28 istifadəçi giriş hüququ</div>
+<div>• 8 glossary term bağlantısı</div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Delete Report</div></div>
+</div>
+
+<h3 style="margin-top:20px">4) Add Data Source — INSERT</h3>
+<div class="wf-modal" style="max-width:550px">
+<div class="modal-header"><span>➕ Add Data Source to Report</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Source Type</div><div class="wf-input" style="font-size:12px">table</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Layer</div><div class="wf-input" style="font-size:12px">Mart</div></div>
+</div>
+<div class="wf-row" style="margin-top:8px">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Catalog Table *</div><div class="wf-input" style="font-size:12px">fact_sales</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Schema / DB</div><div class="wf-input" style="font-size:12px">mart / dwh</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Used Columns (multi-select)</div><div class="wf-input" style="font-size:12px;min-height:50px">customer_id, amount, order_date, product_id, region</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">ETL Process Name</div><div class="wf-input" style="font-size:12px">etl_sales_daily</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Transformation Logic</div><div class="wf-input" style="font-size:12px;min-height:40px">SUM(amount) GROUP BY customer_id, order_date</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Refresh Frequency</div><div class="wf-input" style="font-size:12px">daily @ 03:00 UTC+4</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Add Source</div></div>
+</div>
+
+<h3 style="margin-top:20px">5) Delete Data Source</h3>
+<div class="wf-modal" style="max-width:400px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Remove Data Source</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body" style="text-align:center;padding:16px">
+<div style="font-size:24px;margin-bottom:8px">🗑️</div>
+<div style="font-size:13px;color:#333">"fact_sales" data source-u hesabatdan çıxarılsın?</div>
+<div style="font-size:11px;color:#888;margin-top:6px">Bu cədvəl özü silinmir — yalnız bu hesabatla əlaqə qırılır.</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Remove</div></div>
+</div>
+
+<h3 style="margin-top:20px">6) Add KPI — INSERT</h3>
+<div class="wf-modal" style="max-width:600px">
+<div class="modal-header"><span>➕ Add KPI to Report</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">KPI Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">KPI Code</div><div class="wf-input" style="font-size:12px">MAU</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Business Definition *</div><div class="wf-input" style="font-size:12px;min-height:40px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Technical Formula</div><div class="wf-input" style="font-size:12px;min-height:40px;font-family:monospace">COUNT(DISTINCT user_id) WHERE ...</div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Aggregation</div><div class="wf-input" style="font-size:12px">sum</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Unit</div><div class="wf-input" style="font-size:12px">users</div></div>
+</div>
+<div class="wf-row" style="margin-top:8px">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Target</div><div class="wf-input" style="font-size:12px">50000</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Warning</div><div class="wf-input" style="font-size:12px">45000</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Critical</div><div class="wf-input" style="font-size:12px">40000</div></div>
+</div>
+<div class="wf-row" style="margin-top:8px">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Current</div><div class="wf-input" style="font-size:12px">48250</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Trend</div><div class="wf-input" style="font-size:12px">up</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Linked Term</div><div class="wf-input" style="font-size:12px">CLV</div></div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Add KPI</div></div>
+</div>
+
+<h3 style="margin-top:20px">7) Edit KPI — UPDATE</h3>
+<div class="wf-modal" style="max-width:500px">
+<div class="modal-header"><span>✏️ Edit KPI — Monthly Active Users</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:4px;padding:6px;margin-bottom:10px;font-size:11px;color:#166534">📈 Current: 48,250 | Target: 50,000 | Trend: ▲ up</div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">KPI Name</div><div class="wf-input" style="font-size:12px;color:#555">Monthly Active Users</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Technical Formula</div><div class="wf-input" style="font-size:12px;color:#555;min-height:40px;font-family:monospace">COUNT(DISTINCT user_id)</div></div>
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Current Value</div><div class="wf-input" style="font-size:12px;color:#555">48250</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Trend</div><div class="wf-input" style="font-size:12px;color:#555">up</div></div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Save KPI</div></div>
+</div>
+
+<h3 style="margin-top:20px">8) Delete KPI</h3>
+<div class="wf-modal" style="max-width:400px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Delete KPI</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body" style="text-align:center;padding:16px">
+<div style="font-size:24px;margin-bottom:8px">🗑️</div>
+<div style="font-size:13px;color:#333">"Monthly Active Users" KPI-sını silmək?</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Delete</div></div>
+</div>
+
+<h3 style="margin-top:20px">9) Grant User Access — INSERT</h3>
+<div class="wf-modal" style="max-width:500px">
+<div class="modal-header"><span>👤 Grant Report Access</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">User Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Email *</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+<div class="wf-row" style="margin-top:8px">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Role</div><div class="wf-input" style="font-size:12px">viewer</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Department</div><div class="wf-input" style="font-size:12px">Finance</div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Access Granted By</div><div class="wf-input" style="font-size:12px;color:#aaa">Auto: current user</div></div>
+<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:6px;font-size:11px;color:#92400e">Qeyd: PUT endpoint yoxdur — dəyişiklik üçün sil və yenidən əlavə et.</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Grant Access</div></div>
+</div>
+
+<h3 style="margin-top:20px">10) Revoke User Access — DELETE</h3>
+<div class="wf-modal" style="max-width:400px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Revoke Access</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body" style="text-align:center;padding:16px">
+<div style="font-size:24px;margin-bottom:8px">🚫</div>
+<div style="font-size:13px;color:#333">john@corp.com-un girişi ləğv edilsin?</div>
+<div style="font-size:11px;color:#888;margin-top:4px">Sales Executive Dashboard hesabatından</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Revoke</div></div>
+</div>
+
+<h3 style="margin-top:20px">11) Link Glossary Term — UPSERT</h3>
+<div class="wf-modal" style="max-width:500px">
+<div class="modal-header"><span>🔗 Link Glossary Term to Report</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Glossary Term *</div><div class="wf-input" style="font-size:12px">Customer Lifetime Value (CLV) — Sales</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Relationship Type</div><div class="wf-input" style="font-size:12px">uses</div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Notes</div><div class="wf-input" style="font-size:12px;min-height:50px">Primary source metric for executive dashboard</div></div>
+<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:6px;font-size:11px;color:#0369a1">ℹ️ UPSERT: Əgər bu term artıq linkdirsə, notes yenilənir.</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Link Term</div></div>
+</div>
+
+<h3 style="margin-top:20px">12) Unlink Glossary Term — DELETE</h3>
+<div class="wf-modal" style="max-width:400px">
+<div class="modal-header" style="background:#fef2f2;border-bottom-color:#fca5a5;color:#991b1b"><span>⚠️ Unlink Term</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body" style="text-align:center;padding:16px">
+<div style="font-size:24px;margin-bottom:8px">🔗</div>
+<div style="font-size:13px;color:#333">"CLV" term bağlantısını çıxarmaq?</div>
+<div style="font-size:11px;color:#888;margin-top:4px">Term özü silinmir — yalnız bu hesabatdan əlaqəsi kəsilir.</div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#dc2626;border-color:#991b1b">Unlink</div></div>
+</div>
+
+<h3 style="margin-top:20px">13) Search Reports</h3>
+<div class="wf-modal" style="max-width:550px">
+<div class="modal-header"><span>🔍 Search Reports</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="margin-bottom:10px"><div class="wf-input" style="font-size:13px">🔍 Axtarış sözü...</div></div>
+<div class="wf-row" style="margin-bottom:10px">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Domain</div><div class="wf-input" style="font-size:12px">All</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">BI Tool</div><div class="wf-input" style="font-size:12px">All</div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Status</div><div class="wf-input" style="font-size:12px">All</div></div>
+</div>
+<div style="font-size:11px;color:#888;margin-bottom:6px">Results (3)</div>
+<div style="border:1px solid #e5e7eb;border-radius:4px">
+<div style="padding:8px 10px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+<div><div style="font-size:13px;color:#333;font-weight:600">Sales Executive Dashboard</div><div style="font-size:11px;color:#888">RPT-0001 · Power BI · Sales</div></div>
+<span class="wf-badge" style="background:#dcfce7;color:#166534;border-color:#86efac">certified</span>
+</div>
+<div style="padding:8px 10px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
+<div><div style="font-size:13px;color:#333;font-weight:600">Customer 360</div><div style="font-size:11px;color:#888">RPT-0042 · Tableau · Sales</div></div>
+<span class="wf-badge" style="background:#fef3c7;color:#92400e;border-color:#fcd34d">under_review</span>
+</div>
+<div style="padding:8px 10px;display:flex;justify-content:space-between;align-items:center">
+<div><div style="font-size:13px;color:#333;font-weight:600">Revenue Forecast</div><div style="font-size:11px;color:#888">RPT-0023 · Power BI · Finance</div></div>
+<span class="wf-badge" style="background:#fee2e2;color:#991b1b;border-color:#fca5a5">draft</span>
+</div>
+</div>
+</div>
+<div class="modal-footer"><div class="wf-btn primary" style="font-size:12px">Close</div></div>
+</div>
+
+<h3 style="margin-top:20px">14) Certify Report — Workflow</h3>
+<div class="wf-modal" style="max-width:450px">
+<div class="modal-header"><span>✅ Certify Report</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="padding:8px 0;display:flex;align-items:center;justify-content:center;gap:8px">
+<span class="wf-badge" style="background:#fef3c7;color:#92400e;border-color:#fcd34d">under_review</span>
+<span class="wf-arrow">→</span>
+<span class="wf-badge" style="background:#dcfce7;color:#166534;border-color:#86efac">certified</span>
+</div>
+<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:4px;padding:8px;margin:10px 0;font-size:11px;color:#0369a1">
+<strong>Pre-check:</strong><br>✓ Quality score: 96.5 (≥90 tələb)<br>✓ 3 data source qeydə alınıb<br>✓ 12 KPI tərif edilib<br>✓ Data steward təsdiqi alınıb
+</div>
+<div style="margin-top:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Certification Notes</div><div class="wf-input" style="font-size:12px;min-height:40px"></div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px;background:#10b981;border-color:#059669">Certify</div></div>
+</div>
+
+</div>
+
+<!-- ============ ADMIN MODALS ============ -->
+<div id="modals-admin" style="border-top:3px solid #6b7280;padding-top:20px;margin-top:30px">
+<h2 style="color:#6b7280;font-size:18px;border:none">⚙️ Admin Modals</h2>
+
+<h3 style="margin-top:12px">Create User — INSERT</h3>
+<div class="wf-modal">
+<div class="modal-header"><span>Create User</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div class="wf-row">
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">First Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div class="wf-col"><div style="font-size:11px;color:#888;margin-bottom:4px">Last Name *</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+<div style="margin:8px 0"><div style="font-size:11px;color:#888;margin-bottom:4px">Username *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Email *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Password *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Role</div><div class="wf-input" style="font-size:12px">Select role...</div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Create</div></div>
+</div>
+
+<h3 style="margin-top:20px">Change Password — UPDATE</h3>
+<div class="wf-modal" style="max-width:400px">
+<div class="modal-header"><span>Change Password</span><span style="cursor:default;color:#aaa">✕</span></div>
+<div class="modal-body">
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Current Password *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">New Password *</div><div class="wf-input" style="font-size:12px"></div></div>
+<div style="margin-bottom:8px"><div style="font-size:11px;color:#888;margin-bottom:4px">Confirm Password *</div><div class="wf-input" style="font-size:12px"></div></div>
+</div>
+<div class="modal-footer"><div class="wf-btn" style="font-size:12px">Cancel</div><div class="wf-btn primary" style="font-size:12px">Update</div></div>
+</div>
+
+</div>
+
+</section>
+
+</main>
+</body>
+</html>

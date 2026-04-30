@@ -1,0 +1,36 @@
+# Value Validity Checks
+
+checks for users:
+  - invalid_count(email) = 0:
+      name: Email format validation
+      valid format: email
+  - invalid_count(is_active) = 0:
+      name: User status validation
+      valid values: [0, 1, true, false]
+
+checks for data_quality_rules:
+  - invalid_count(rule_type) = 0:
+      name: Rule type validation
+      valid values: 
+        - not_null
+        - unique
+        - range
+        - regex
+        - custom
+        - freshness
+        - row_count
+  - invalid_count(status) = 0:
+      name: Rule status validation
+      valid values: ['active', 'inactive']
+
+checks for audit_log:
+  - invalid_count(action) = 0:
+      name: Audit action validation
+      valid values: 
+        - CREATE
+        - UPDATE
+        - DELETE
+        - LOGIN
+        - LOGOUT
+        - VIEW
+        - EXPORT

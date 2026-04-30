@@ -1,0 +1,33 @@
+# Uniqueness Checks
+
+checks for users:
+  - duplicate_count(id) = 0:
+      name: User ID uniqueness
+  - duplicate_count(username) = 0:
+      name: Username uniqueness
+  - duplicate_count(email) = 0:
+      name: Email uniqueness
+
+checks for catalog_tables:
+  - duplicate_count(id) = 0:
+      name: Table ID uniqueness
+  - duplicate_count(name, layer_id) = 0:
+      name: Table name unique per layer
+
+checks for catalog_columns:
+  - duplicate_count(id) = 0:
+      name: Column ID uniqueness
+  - duplicate_count(table_id, name) = 0:
+      name: Column name unique per table
+
+checks for catalog_layers:
+  - duplicate_count(id) = 0:
+      name: Layer ID uniqueness
+  - duplicate_count(name) = 0:
+      name: Layer name uniqueness
+
+checks for roles:
+  - duplicate_count(id) = 0:
+      name: Role ID uniqueness
+  - duplicate_count(name) = 0:
+      name: Role name uniqueness

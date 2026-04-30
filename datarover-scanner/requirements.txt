@@ -1,0 +1,50 @@
+# DataRover Scanner v3.0 - Dependencies
+
+# Web Framework
+fastapi==0.109.0
+uvicorn==0.27.0
+pydantic==2.5.3
+
+# MySQL/MariaDB (core)
+mysql-connector-python==8.3.0
+
+# PostgreSQL (optional)
+psycopg2-binary==2.9.9
+
+# SQL Server (optional)
+pymssql==2.2.11
+
+# Oracle (optional - requires Oracle client)
+oracledb==2.0.1
+
+# Apache Hive (optional)
+pyhive==0.7.0
+thrift==0.22.0
+thrift-sasl==0.4.3
+
+# MongoDB (optional)
+pymongo==4.6.1
+
+# Snowflake (optional)
+snowflake-connector-python==3.6.0
+
+# ClickHouse (optional)
+clickhouse-driver==0.2.6
+
+# Google BigQuery (optional)
+google-cloud-bigquery==3.14.1
+
+# Cassandra (optional)
+cassandra-driver==3.29.0
+
+# Redis (optional)
+redis==5.0.1
+
+# Elasticsearch (optional)
+elasticsearch==8.12.0
+
+# iomete Lakehouse (optional) - SQLAlchemy driver
+py-hive-iomete[sqlalchemy]==2.1.5
+
+# Utilities
+python-dotenv==1.0.0

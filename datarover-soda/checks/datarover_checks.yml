@@ -1,0 +1,9 @@
+# DataRover Soda Checks
+# Generated: 2025-12-07T22:04:17.742Z
+
+checks for  :
+  - failed rows:
+      fail query: |
+        Select  *  from glossary_terms where formula  is null
+
+

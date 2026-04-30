@@ -1,0 +1,14 @@
+.git
+.gitignore
+*.zip
+*.docx
+*.code-workspace
+node_modules
+vendor
+.idea
+.vscode
+__pycache__
+*.pyc
+*.log
+*.bak
+*~

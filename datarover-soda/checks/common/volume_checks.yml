@@ -1,0 +1,23 @@
+# Volume & Row Count Checks
+
+checks for catalog_tables:
+  - row_count > 0:
+      name: Catalog tables not empty
+
+checks for catalog_columns:
+  - row_count > 0:
+      name: Catalog columns not empty
+
+checks for catalog_layers:
+  - row_count > 0:
+      name: Catalog layers not empty
+
+checks for users:
+  - row_count > 0:
+      name: Users table not empty
+  - row_count >= 1:
+      name: At least one user exists
+
+checks for data_quality_rules:
+  - row_count >= 0:
+      name: Quality rules table exists

@@ -1,0 +1,35 @@
+# Null Value Checks
+
+checks for users:
+  - missing_count(id) = 0:
+      name: User ID not null
+  - missing_count(username) = 0:
+      name: Username not null
+  - missing_count(email) = 0:
+      name: Email not null
+  - missing_percent(first_name) < 50%:
+      name: First name completeness
+
+checks for catalog_tables:
+  - missing_count(id) = 0:
+      name: Table ID not null
+  - missing_count(name) = 0:
+      name: Table name not null
+  - missing_count(layer_id) = 0:
+      name: Layer ID not null
+
+checks for catalog_columns:
+  - missing_count(id) = 0:
+      name: Column ID not null
+  - missing_count(table_id) = 0:
+      name: Table ID reference not null
+  - missing_count(name) = 0:
+      name: Column name not null
+  - missing_count(data_type) = 0:
+      name: Data type not null
+
+checks for data_quality_rules:
+  - missing_count(name) = 0:
+      name: Rule name not null
+  - missing_count(rule_type) = 0:
+      name: Rule type not null

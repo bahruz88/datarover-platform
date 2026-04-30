@@ -1,0 +1,48 @@
+# Business Rules Checks
+
+checks for users:
+  # Admin user must exist
+  - failed rows:
+      name: Admin user exists
+      fail query: |
+        SELECT 1 
+        WHERE NOT EXISTS (
+          SELECT 1 FROM users u 
+          JOIN user_roles ur ON u.id = ur.user_id
+          JOIN roles r ON ur.role_id = r.id
+          WHERE r.name = 'Admin'
+        )
+
+checks for catalog_columns:
+  # All columns must belong to existing tables
+  - failed rows:
+      name: Column table reference valid
+      fail query: |
+        SELECT c.* FROM catalog_columns c
+        WHERE c.table_id NOT IN (SELECT id FROM catalog_tables)
+
+checks for catalog_tables:
+  # All tables must belong to existing layers
+  - failed rows:
+      name: Table layer reference valid
+      fail query: |
+        SELECT t.* FROM catalog_tables t
+        WHERE t.layer_id NOT IN (SELECT id FROM catalog_layers)
+
+checks for data_quality_rules:
+  # Active rules must have valid parameters
+  - failed rows:
+      name: Active rules have parameters
+      fail query: |
+        SELECT * FROM data_quality_rules
+        WHERE status = 'active' 
+        AND (parameters IS NULL OR parameters = '{}')
+        AND rule_type IN ('range', 'regex')
+
+checks for column_mappings:
+  # Source and target columns must be different
+  - failed rows:
+      name: Mapping source-target different
+      fail query: |
+        SELECT * FROM column_mappings
+        WHERE source_column_id = target_column_id

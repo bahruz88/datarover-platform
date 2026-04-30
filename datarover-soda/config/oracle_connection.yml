@@ -1,0 +1,5 @@
+data_source oracle_db:
+  type: oracle
+  username: ${ORACLE_USER}
+  password: ${ORACLE_PASSWORD}
+  dsn: "${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_SERVICE}"

@@ -1,0 +1,8 @@
+data_source:
+  oracle_db:
+    type: oracle
+    username: hr         # Oracle istifadəçi adı
+    password: hr     # Oracle parolu
+    host: localhost             # Oracle server IP və ya hostname
+    port: 1521                  # Default Oracle port, lazım gələrsə dəyişdir
+    service_name: orcl   # Oracle service name (ORCL kimi)

@@ -1,0 +1,22 @@
+# Freshness Checks
+
+checks for audit_log:
+  - freshness(created_at) < 24h:
+      name: Audit log freshness (24h)
+
+checks for users:
+  - freshness(updated_at) < 30d:
+      name: User data freshness (30 days)
+      warn: when > 7d
+      fail: when > 30d
+
+checks for catalog_tables:
+  - freshness(updated_at) < 90d:
+      name: Catalog freshness (90 days)
+      warn: when > 30d
+
+checks for data_quality_results:
+  - freshness(executed_at) < 24h:
+      name: Quality results freshness
+      warn: when > 12h
+      fail: when > 24h

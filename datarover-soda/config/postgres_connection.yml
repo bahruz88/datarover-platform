@@ -1,0 +1,7 @@
+data_source postgres_db:
+  type: postgres
+  host: ${POSTGRES_HOST:-localhost}
+  port: 5432
+  username: ${POSTGRES_USER:-postgres}
+  password: ${POSTGRES_PASSWORD}
+  database: ${POSTGRES_DATABASE:-datarover}

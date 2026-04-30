@@ -1,0 +1,9 @@
+data_source snowflake_db:
+  type: snowflake
+  account: ${SNOWFLAKE_ACCOUNT}
+  username: ${SNOWFLAKE_USER}
+  password: ${SNOWFLAKE_PASSWORD}
+  database: ${SNOWFLAKE_DATABASE:-DATAROVER}
+  warehouse: ${SNOWFLAKE_WAREHOUSE:-COMPUTE_WH}
+  schema: ${SNOWFLAKE_SCHEMA:-PUBLIC}
+  role: ${SNOWFLAKE_ROLE:-SYSADMIN}

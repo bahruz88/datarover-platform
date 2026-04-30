@@ -1,0 +1,10 @@
+[02:10:41] Soda Core 3.5.4
+[02:10:41] Configuration path 'config/mysql_connection.yml' does not exist
+[02:10:41] Path "checks/datarover_checks.yml" does not exist
+[02:10:41] Scan summary:
+[02:10:41] No valid checks found, 0 checks evaluated.
+[02:10:41] 2 errors.
+[02:10:41] Oops! 2 errors. 0 failures. 0 warnings. 0 pass.
+ERRORS:
+[02:10:41] Configuration path 'config/mysql_connection.yml' does not exist
+[02:10:41] Path "checks/datarover_checks.yml" does not exist

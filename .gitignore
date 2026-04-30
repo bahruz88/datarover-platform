@@ -1,0 +1,47 @@
+# Secrets / local env
+.env
+*.env.local
+.env.*.local
+
+# DB dumps (contain real data — opt in by removing this rule if you want them in the repo)
+docker/db-init/*.sql
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.code-workspace
+
+# Logs / temp
+*.log
+*.bak
+*.swp
+*~
+
+# Local SQLite databases (schedule service)
+*.db
+
+# Backups / archives
+*.zip
+*.tar
+*.tar.gz
+
+# Docker volumes (host-side, if any)
+docker/data/
+
+# Deployment artifacts
+datarover-deploy.zip
