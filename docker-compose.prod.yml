@@ -28,7 +28,7 @@ services:
       retries: 10
 
   apache:
-    image: ${IMAGE_OWNER:-bahruz88}/datarover-apache:${IMAGE_TAG:-latest}
+    image: ${IMAGE_OWNER:-bqasimov}/htdocs-apache:${IMAGE_TAG:-v1.0}
     container_name: datarover-apache
     restart: unless-stopped
     depends_on:
@@ -48,7 +48,7 @@ services:
       - datarover-net
 
   scanner:
-    image: ${IMAGE_OWNER:-bahruz88}/datarover-scanner:${IMAGE_TAG:-latest}
+    image: ${IMAGE_OWNER:-bqasimov}/htdocs-scanner:${IMAGE_TAG:-v1.0}
     container_name: datarover-scanner
     restart: unless-stopped
     ports:
@@ -57,7 +57,7 @@ services:
       - datarover-net
 
   schedule:
-    image: ${IMAGE_OWNER:-bahruz88}/datarover-schedule:${IMAGE_TAG:-latest}
+    image: ${IMAGE_OWNER:-bqasimov}/htdocs-schedule:${IMAGE_TAG:-v1.0}
     container_name: datarover-schedule
     restart: unless-stopped
     depends_on:
