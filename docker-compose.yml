@@ -37,6 +37,7 @@ services:
       DB_PASS: ${MYSQL_ROOT_PASSWORD:-rootpw}
       SCANNER_URL: http://scanner:8000
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      IOMETE_TOKEN: ${IOMETE_TOKEN:-}
     volumes:
       # live-edit support: mount source so PHP changes reload without rebuild
       - ./datarover:/var/www/html/datarover
@@ -53,6 +54,9 @@ services:
       dockerfile: Dockerfile
     container_name: datarover-scanner
     restart: unless-stopped
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      IOMETE_TOKEN: ${IOMETE_TOKEN:-}
     ports:
       - "${SCANNER_HOST_PORT:-8000}:8000"
     networks:

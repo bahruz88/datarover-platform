@@ -5,32 +5,12 @@ Uses the `py-hive-iomete[sqlalchemy]` package.
 Docs: https://iomete.com/resources/user-guide/driver/sql-alchemy-driver
 """
 
-import re
 from urllib.parse import quote_plus
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any
 
 from sqlalchemy import create_engine, text
 
 from .base import BaseConnector
-
-
-_ROWS_RE = re.compile(r'(\d[\d,]*)\s*rows', re.IGNORECASE)
-_BYTES_RE = re.compile(r'(\d[\d,]*)\s*bytes', re.IGNORECASE)
-
-
-def _parse_statistics(stats: str) -> Tuple[int, float]:
-    """Parse Spark `Statistics` string like '12345 bytes, 678 rows'. Returns (rows, size_mb)."""
-    if not stats:
-        return 0, 0.0
-    rows = 0
-    size_mb = 0.0
-    m = _ROWS_RE.search(stats)
-    if m:
-        rows = int(m.group(1).replace(',', ''))
-    m = _BYTES_RE.search(stats)
-    if m:
-        size_mb = round(int(m.group(1).replace(',', '')) / 1024 / 1024, 2)
-    return rows, size_mb
 
 
 class IometeConnector(BaseConnector):
@@ -111,6 +91,10 @@ class IometeConnector(BaseConnector):
             raise e
 
     def list_tables(self, schema: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Return only the table list — no DESCRIBE/COUNT(*) per table.
+        On a lakehouse with hundreds of tables those per-table calls timed out and
+        starved the scanner of memory. Per-table stats are now fetched on demand
+        (e.g. via /profile-table or a dedicated stats endpoint)."""
         try:
             self.connect()
             db_name = schema or self.database or 'default'
@@ -120,40 +104,12 @@ class IometeConnector(BaseConnector):
             for r in rows:
                 # SHOW TABLES returns (database, tableName, isTemporary) on Spark/iomete
                 table_name = r[1] if len(r) > 1 else r[0]
-                table_type = 'BASE TABLE'
-                row_count = 0
-                size_mb = 0.0
-                try:
-                    desc = self._connection.execute(
-                        text(f"DESCRIBE TABLE EXTENDED `{db_name}`.`{table_name}`")
-                    ).fetchall()
-                    for row in desc:
-                        col = str(row[0]) if row[0] else ''
-                        val = str(row[1]) if len(row) > 1 and row[1] else ''
-                        if 'Type' in col and table_type == 'BASE TABLE':
-                            if 'VIEW' in val.upper():
-                                table_type = 'VIEW'
-                        elif col.strip() == 'Statistics':
-                            row_count, size_mb = _parse_statistics(val)
-                except Exception:
-                    pass
-
-                if row_count == 0 and table_type == 'BASE TABLE':
-                    try:
-                        cnt = self._connection.execute(
-                            text(f"SELECT COUNT(*) FROM `{db_name}`.`{table_name}`")
-                        ).fetchone()
-                        if cnt and cnt[0] is not None:
-                            row_count = int(cnt[0])
-                    except Exception:
-                        pass
-
                 tables.append({
                     'schema_name': db_name,
                     'table_name': table_name,
-                    'table_type': table_type,
-                    'row_count': row_count,
-                    'size_mb': size_mb,
+                    'table_type': 'BASE TABLE',
+                    'row_count': 0,
+                    'size_mb': 0.0,
                     'comment': None,
                 })
             self.disconnect()
