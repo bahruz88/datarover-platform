@@ -1055,6 +1055,17 @@ function requireAuth() {
     if (!$user['is_active']) {
         error('Account is disabled', 403);
     }
+    // The super-admin (`admin`) is exempt from lockout — skip the lock check entirely
+    // and self-heal any stale lock state that may have been written before this rule.
+    if ($user['username'] === 'admin') {
+        if ($user['is_locked'] || $user['failed_login_attempts']) {
+            db()->prepare("UPDATE users SET is_locked = FALSE, locked_until = NULL, failed_login_attempts = 0 WHERE id = ?")
+                ->execute([$user['id']]);
+            $user['is_locked'] = 0;
+            $user['failed_login_attempts'] = 0;
+        }
+        return $user;
+    }
     if ($user['is_locked']) {
         error('Account is locked', 403);
     }
@@ -1181,10 +1192,11 @@ function checkPasswordHistory($userId, $newPassword, $tenantId = 1) {
     $stmt = db()->prepare("SELECT prevent_reuse_count FROM password_policies WHERE tenant_id = ? OR tenant_id IS NULL ORDER BY tenant_id DESC LIMIT 1");
     $stmt->execute([$tenantId]);
     $policy = $stmt->fetch();
-    $reuseCount = $policy['prevent_reuse_count'] ?? 5;
-    
-    $stmt = db()->prepare("SELECT password_hash FROM password_history WHERE user_id = ? ORDER BY created_at DESC LIMIT ?");
-    $stmt->execute([$userId, $reuseCount]);
+    $reuseCount = (int)($policy['prevent_reuse_count'] ?? 5);
+
+    // PDO binds LIMIT as a string, which MariaDB rejects ("near '5'"); cast to int and inline it.
+    $stmt = db()->prepare("SELECT password_hash FROM password_history WHERE user_id = ? ORDER BY created_at DESC LIMIT $reuseCount");
+    $stmt->execute([$userId]);
     $history = $stmt->fetchAll();
     
     foreach ($history as $h) {
@@ -1371,24 +1383,41 @@ try {
                 error('Invalid username or password', 401);
             }
             
-            // Check if locked
-            if ($user['is_locked'] && $user['locked_until'] && strtotime($user['locked_until']) > time()) {
+            // The built-in `admin` super-user is exempt from lockout.
+            // Auto-clear any stale lock state on this user before any further checks.
+            $isSuperAdmin = ($user['username'] === 'admin');
+            if ($isSuperAdmin && ($user['is_locked'] || $user['failed_login_attempts'] > 0)) {
+                db()->prepare("UPDATE users SET is_locked = FALSE, locked_until = NULL, failed_login_attempts = 0 WHERE id = ?")
+                    ->execute([$user['id']]);
+                $user['is_locked'] = 0;
+                $user['failed_login_attempts'] = 0;
+                $user['locked_until'] = null;
+            }
+
+            // Check if locked (admin can't be locked, see above)
+            if (!$isSuperAdmin && $user['is_locked'] && $user['locked_until'] && strtotime($user['locked_until']) > time()) {
                 auditLog($user['id'], 'login_blocked', 'auth', 'user', $user['id'], null, null, 'failure', 'Account locked');
                 error('Account is locked. Try again later.', 403);
             }
-            
+
             // Verify password
             if (!verifyPassword($password, $user['password_hash'])) {
+                if ($isSuperAdmin) {
+                    // Don't increment attempts or lock the super-admin — just reject the password.
+                    auditLog($user['id'], 'login_failed', 'auth', 'user', $user['id'], null, ['username' => $username], 'failure', 'Invalid password (super-admin lockout disabled)');
+                    error('Invalid username or password', 401);
+                }
+
                 // Increment failed attempts
                 $attempts = $user['failed_login_attempts'] + 1;
-                
+
                 // Get lockout policy
                 $stmt = db()->prepare("SELECT lockout_attempts, lockout_duration_minutes FROM password_policies WHERE tenant_id = ? OR tenant_id IS NULL ORDER BY tenant_id DESC LIMIT 1");
                 $stmt->execute([$user['tenant_id']]);
                 $policy = $stmt->fetch();
                 $maxAttempts = $policy['lockout_attempts'] ?? 5;
                 $lockoutMinutes = $policy['lockout_duration_minutes'] ?? 30;
-                
+
                 if ($attempts >= $maxAttempts) {
                     // Lock account
                     $lockUntil = date('Y-m-d H:i:s', strtotime("+$lockoutMinutes minutes"));
@@ -1399,7 +1428,7 @@ try {
                 } else {
                     db()->prepare("UPDATE users SET failed_login_attempts = ? WHERE id = ?")->execute([$attempts, $user['id']]);
                 }
-                
+
                 auditLog($user['id'], 'login_failed', 'auth', 'user', $user['id'], null, ['attempt' => $attempts], 'failure', 'Invalid password');
                 error('Invalid username or password', 401);
             }
@@ -2225,9 +2254,11 @@ try {
                     $params[] = $data['is_active'] ? 1 : 0;
                 }
                 if (isset($data['is_locked'])) {
+                    // The super-admin can never be locked — silently coerce to unlocked.
+                    $lockValue = ($oldUser['username'] === 'admin') ? 0 : ($data['is_locked'] ? 1 : 0);
                     $updates[] = 'is_locked = ?';
                     $updates[] = 'locked_until = NULL';
-                    $params[] = $data['is_locked'] ? 1 : 0;
+                    $params[] = $lockValue;
                 }
                 
                 if ($updates) {
@@ -2611,9 +2642,70 @@ try {
         
         case 'glossary_terms':
             if ($method === 'GET') {
+                $authUser = requireAuth();
+
+                // Workflow visibility:
+                //   * draft     → only the author (term.owner)
+                //   * review/pending/rejected → author + domain_owner of term.domain
+                //   * approved  → everyone
+                //   * deleted   → governance toggle (handled on the frontend)
+                // The super-admin (`admin`) bypasses these checks.
+                $isAdmin = ($authUser['username'] === 'admin');
+
+                $myFullName = trim(($authUser['first_name'] ?? '') . ' ' . ($authUser['last_name'] ?? ''));
+                $myEmail    = trim($authUser['email'] ?? '');
+                $myUsername = trim($authUser['username'] ?? '');
+
+                // Visibility rules (per user feedback):
+                //  - admin → everything
+                //  - data_steward (in any domain) → every term, every status, every domain
+                //  - domain_owner → approved/published (anywhere) + review-style terms in
+                //    their own domain (awaiting their approval)
+                //  - any other stakeholder / no role → approved/published only
+                $isSteward = false;
+                $myDomainOwnerDomains = [];
+                if (!$isAdmin) {
+                    $stmt = db()->prepare("
+                        SELECT d.name AS domain_name, ds.role_id
+                        FROM domains d
+                        JOIN domain_stakeholders ds ON ds.domain_id = d.id
+                        WHERE ds.stakeholder_email = ? OR ds.stakeholder_name = ?
+                    ");
+                    $stmt->execute([$myEmail, $myFullName]);
+                    foreach ($stmt->fetchAll() as $row) {
+                        if ($row['role_id'] === 'data_steward') $isSteward = true;
+                        if ($row['role_id'] === 'domain_owner') $myDomainOwnerDomains[] = $row['domain_name'];
+                    }
+                    $myDomainOwnerDomains = array_values(array_unique($myDomainOwnerDomains));
+                }
+
+                $buildVisibilityClause = function() use ($isAdmin, $isSteward, $myDomainOwnerDomains, &$visParams) {
+                    if ($isAdmin) { $visParams = []; return ''; }
+                    if ($isSteward) {
+                        // Stewards see every active term in every domain — but soft-deleted
+                        // terms stay hidden from the regular list (admin/governance can still see).
+                        $visParams = [];
+                        return " AND t.status <> 'deleted'";
+                    }
+                    $clauses = [];
+                    $visParams = [];
+                    // approved/published → visible to everyone (excluding deleted)
+                    $clauses[] = "t.status IN ('approved', 'published')";
+                    // Domain owner sees approval-pending terms in their domain.
+                    if (!empty($myDomainOwnerDomains)) {
+                        $ph = implode(',', array_fill(0, count($myDomainOwnerDomains), '?'));
+                        $clauses[] = "(t.domain IN ($ph) AND t.status IN ('review','pending','under_review','rejected'))";
+                        foreach ($myDomainOwnerDomains as $d) $visParams[] = $d;
+                    }
+                    return ' AND (' . implode(' OR ', $clauses) . ")" . " AND t.status <> 'deleted'";
+                };
+
                 if ($id) {
-                    $stmt = db()->prepare("SELECT * FROM glossary_terms WHERE id = ?");
-                    $stmt->execute([$id]);
+                    $visParams = [];
+                    $visClause = $buildVisibilityClause();
+                    $sql = "SELECT t.* FROM glossary_terms t WHERE t.id = ?" . $visClause;
+                    $stmt = db()->prepare($sql);
+                    $stmt->execute(array_merge([$id], $visParams));
                     $term = $stmt->fetch();
                     if (!$term) error('Term not found', 404);
 
@@ -2635,12 +2727,12 @@ try {
                     $search = $_GET['q'] ?? '';
                     $status = $_GET['status'] ?? '';
                     $domain = $_GET['domain'] ?? '';
-                    
-                    $sql = "SELECT t.*, 
+
+                    $sql = "SELECT t.*,
                             (SELECT COUNT(*) FROM glossary_term_history WHERE term_id = t.id) as history_count
                             FROM glossary_terms t WHERE 1=1";
                     $params = [];
-                    
+
                     if ($search) {
                         $sql .= " AND (t.name LIKE ? OR t.definition LIKE ?)";
                         $params[] = "%$search%";
@@ -2654,7 +2746,11 @@ try {
                         $sql .= " AND t.domain = ?";
                         $params[] = $domain;
                     }
-                    
+
+                    $visParams = [];
+                    $sql .= $buildVisibilityClause();
+                    foreach ($visParams as $p) $params[] = $p;
+
                     $sql .= " ORDER BY t.created_at DESC";
                     $stmt = db()->prepare($sql);
                     $stmt->execute($params);
@@ -2675,7 +2771,15 @@ try {
             elseif ($method === 'POST') {
                 $data = getInput();
                 if (empty($data['name'])) error('Name is required');
-                
+
+                // Track who created the term (current authenticated user)
+                $authUser = getCurrentUser();
+                $createdBy = '';
+                if ($authUser) {
+                    $createdBy = trim(($authUser['first_name'] ?? '') . ' ' . ($authUser['last_name'] ?? ''));
+                    if ($createdBy === '') $createdBy = $authUser['username'] ?? 'Unknown';
+                }
+
                 // Handle stewards as JSON array
                 $stewards = '';
                 if (isset($data['stewards'])) {
@@ -2703,9 +2807,9 @@ try {
                     (is_array($data['history']) ? json_encode($data['history']) : $data['history']) : null;
 
                 $stmt = db()->prepare("INSERT INTO glossary_terms
-                    (name, abbreviation, definition, domain, data_type, example, formula, business_logic, technical_description, owner, stewards, security_classification, physical_attributes, quality_rules, synonyms, related_terms, source_system, notes, history, status, reject_reason, process_comments, created_at, updated_at) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-                
+                    (name, abbreviation, definition, domain, data_type, example, formula, business_logic, technical_description, owner, created_by, stewards, security_classification, physical_attributes, quality_rules, synonyms, related_terms, source_system, notes, history, status, reject_reason, process_comments, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+
                 $stmt->execute([
                     $data['name'],
                     $data['abbreviation'] ?? '',
@@ -2717,6 +2821,7 @@ try {
                     $data['businessLogic'] ?? '',
                     $data['technicalDescription'] ?? '',
                     $data['owner'] ?? '',
+                    $createdBy,
                     $stewards,
                     $data['securityClassification'] ?? null,
                     $physicalAttributes,
@@ -2779,6 +2884,41 @@ try {
                     synonyms = ?, related_terms = ?, source_system = ?, notes = ?, history = ?,
                     status = ?, reject_reason = ?, process_comments = ?, updated_at = NOW()
                     WHERE id = ?");
+                // Auto-advance: if the workflow step that the term is moving INTO has an
+                // empty `approved_by`, move the term forward in one go (no human action
+                // needed). With the current configuration `approved.approved_by` is set so
+                // this is a no-op for the normal review→approved→published path — the
+                // steward still has to publish manually — but the helper stays in place
+                // for any future steps that are configured as fully automatic.
+                $finalStatus = $data['status'] ?? 'draft';
+                $stepStmt = db()->prepare("SELECT approved_by, next_step FROM governance_workflow_steps WHERE step_id = ?");
+                $stepStmt->execute([$finalStatus]);
+                $stepRow = $stepStmt->fetch();
+                if ($stepRow) {
+                    $approvers = json_decode($stepRow['approved_by'] ?? '[]', true);
+                    if (empty($approvers) && !empty($stepRow['next_step'])) {
+                        $finalStatus = $stepRow['next_step'];
+                    }
+                }
+
+                // Reopen snapshot must be taken BEFORE the UPDATE so we capture the
+                // pre-edit (e.g. published) state, not the new draft.
+                $isReopen = ($finalStatus === 'draft' && (($data['snapshot_action'] ?? '') === 'reopened'));
+                if ($isReopen) {
+                    $authUser = getCurrentUser();
+                    $snapshotBy = $authUser
+                        ? (trim(($authUser['first_name'] ?? '') . ' ' . ($authUser['last_name'] ?? '')) ?: ($authUser['username'] ?? 'system'))
+                        : 'system';
+                    $verRow = db()->prepare("SELECT COALESCE(MAX(version_number), 0) + 1 AS v FROM glossary_term_versions WHERE term_id = ?");
+                    $verRow->execute([$id]);
+                    $nextVersion = (int)$verRow->fetch()['v'];
+                    $insV = db()->prepare("INSERT INTO glossary_term_versions
+                        (term_id, version_number, name, abbreviation, definition, domain, data_type, example, formula, business_logic, technical_description, owner, created_by, stewards, physical_attributes, quality_rules, synonyms, related_terms, source_system, notes, security_classification, status, snapshot_action, snapshot_by)
+                        SELECT id, ?, name, abbreviation, definition, domain, data_type, example, formula, business_logic, technical_description, owner, created_by, stewards, physical_attributes, quality_rules, synonyms, related_terms, source_system, notes, security_classification, status, ?, ?
+                        FROM glossary_terms WHERE id = ?");
+                    $insV->execute([$nextVersion, 'reopened', $snapshotBy, $id]);
+                }
+
                 $stmt->execute([
                     $data['name'],
                     $data['abbreviation'] ?? '',
@@ -2799,13 +2939,31 @@ try {
                     $data['sourceSystem'] ?? '',
                     $data['notes'] ?? '',
                     $history,
-                    $data['status'] ?? 'draft',
+                    $finalStatus,
                     $data['rejectReason'] ?? null,
                     $data['processComments'] ?? null,
                     $id
                 ]);
-                
-                respond(['message' => 'Term updated']);
+
+                // Versioning: snapshot AFTER the update for stable statuses
+                // (`published`, `deprecated`). The Reopen case is already snapshotted
+                // above (before the UPDATE) so we don't repeat it here.
+                if (in_array($finalStatus, ['published', 'deprecated'], true)) {
+                    $authUser = getCurrentUser();
+                    $snapshotBy = $authUser
+                        ? (trim(($authUser['first_name'] ?? '') . ' ' . ($authUser['last_name'] ?? '')) ?: ($authUser['username'] ?? 'system'))
+                        : 'system';
+                    $verRow = db()->prepare("SELECT COALESCE(MAX(version_number), 0) + 1 AS v FROM glossary_term_versions WHERE term_id = ?");
+                    $verRow->execute([$id]);
+                    $nextVersion = (int)$verRow->fetch()['v'];
+                    $insV = db()->prepare("INSERT INTO glossary_term_versions
+                        (term_id, version_number, name, abbreviation, definition, domain, data_type, example, formula, business_logic, technical_description, owner, created_by, stewards, physical_attributes, quality_rules, synonyms, related_terms, source_system, notes, security_classification, status, snapshot_action, snapshot_by)
+                        SELECT id, ?, name, abbreviation, definition, domain, data_type, example, formula, business_logic, technical_description, owner, created_by, stewards, physical_attributes, quality_rules, synonyms, related_terms, source_system, notes, security_classification, status, ?, ?
+                        FROM glossary_terms WHERE id = ?");
+                    $insV->execute([$nextVersion, $finalStatus, $snapshotBy, $id]);
+                }
+
+                respond(['message' => 'Term updated', 'status' => $finalStatus]);
             }
             elseif ($method === 'DELETE') {
                 if (!$id) error('ID is required');
@@ -4374,6 +4532,375 @@ try {
                 }
                 
                 respond($profiling);
+            }
+            break;
+
+        case 'glossary_term_versions':
+            // GET ?term_id=X → all snapshots for a term, newest first.
+            // GET &id=Y → a single snapshot (full payload).
+            if ($method !== 'GET') error('Method not allowed', 405);
+            requireAuth();
+            if ($id) {
+                $stmt = db()->prepare("SELECT * FROM glossary_term_versions WHERE id = ?");
+                $stmt->execute([$id]);
+                $row = $stmt->fetch();
+                if (!$row) error('Version not found', 404);
+                respond($row);
+            } else {
+                $termId = $_GET['term_id'] ?? null;
+                if (!$termId) error('term_id is required');
+                $stmt = db()->prepare("SELECT id, version_number, name, status, snapshot_action, snapshot_by, snapshot_at FROM glossary_term_versions WHERE term_id = ? ORDER BY version_number DESC");
+                $stmt->execute([$termId]);
+                respond($stmt->fetchAll());
+            }
+            break;
+
+        case 'glossary_pending_for_me':
+            // Returns glossary terms whose current workflow step expects an action from
+            // the logged-in user, based on (domain, role) — works for stewards, owners, etc.
+            if ($method !== 'GET') error('Method not allowed', 405);
+            $authUser = requireAuth();
+
+            $email = trim($authUser['email'] ?? '');
+            $fullName = trim(($authUser['first_name'] ?? '') . ' ' . ($authUser['last_name'] ?? ''));
+
+            // 1. Find every (domain, role) pair the user holds.
+            $stmt = db()->prepare("
+                SELECT DISTINCT d.name AS domain_name, ds.role_id
+                FROM domains d
+                JOIN domain_stakeholders ds ON ds.domain_id = d.id
+                WHERE ds.stakeholder_email = ? OR ds.stakeholder_name = ?
+            ");
+            $stmt->execute([$email, $fullName]);
+            $domainRoles = $stmt->fetchAll();
+
+            if (empty($domainRoles)) {
+                respond(['terms' => [], 'count' => 0, 'my_domains' => []]);
+            }
+
+            // 2. Build a (domain → my-roles) map and the unique domain list.
+            $domainsByRole = [];
+            foreach ($domainRoles as $dr) {
+                $domainsByRole[$dr['domain_name']][] = $dr['role_id'];
+            }
+            $myDomains = array_keys($domainsByRole);
+
+            // 3. Pull every step's approver list into memory.
+            $stepsRaw = db()->query("SELECT step_id, approved_by FROM governance_workflow_steps")->fetchAll();
+            $stepApprovers = [];
+            foreach ($stepsRaw as $s) {
+                $stepApprovers[$s['step_id']] = json_decode($s['approved_by'] ?? '[]', true) ?: [];
+            }
+
+            // 4. Fetch all terms in those domains.
+            $placeholders = implode(',', array_fill(0, count($myDomains), '?'));
+            $sql = "SELECT id, name, abbreviation, definition, domain, status, owner, created_by, created_at, updated_at
+                    FROM glossary_terms
+                    WHERE domain IN ($placeholders)
+                    ORDER BY updated_at DESC, created_at DESC";
+            $stmt = db()->prepare($sql);
+            $stmt->execute($myDomains);
+            $allTerms = $stmt->fetchAll();
+
+            // 5. Keep the ones the user is *personally* responsible for at this step.
+            //    - data_steward roles (draft, approved, rejected) → only the term's creator
+            //      sees their own pending action.
+            //    - domain_owner / data_custodian / data_architect roles (review, published) →
+            //      every stakeholder in that role for the domain sees the term.
+            $username = trim($authUser['username'] ?? '');
+            // Pull this user's "already read" notifications so we can hide them.
+            $readMap = [];
+            $readStmt = db()->prepare("SELECT term_id, status FROM notification_reads WHERE user_id = ?");
+            $readStmt->execute([$authUser['id']]);
+            foreach ($readStmt->fetchAll() as $r) {
+                $readMap[$r['term_id'] . '::' . $r['status']] = 1;
+            }
+
+            $username = trim($authUser['username'] ?? '');
+            // Statuses where the steward action is private to the term creator
+            // (e.g. "fix this rejected draft" only the author cares about).
+            // For everything else (e.g. publishing an approved term), any steward
+            // of the domain can act, so the notification fans out to all of them.
+            $stewardCreatorOnlyStatuses = ['draft', 'rejected'];
+
+            $pending = [];
+            foreach ($allTerms as $t) {
+                $approvers = $stepApprovers[$t['status']] ?? [];
+                if (empty($approvers)) continue;
+                $myRoles = $domainsByRole[$t['domain']] ?? [];
+                $matchingRole = null;
+                foreach ($myRoles as $r) {
+                    if (in_array($r, $approvers, true)) { $matchingRole = $r; break; }
+                }
+                if (!$matchingRole) continue;
+
+                if ($matchingRole === 'data_steward' && in_array($t['status'], $stewardCreatorOnlyStatuses, true)) {
+                    $creator = $t['created_by'] ?? '';
+                    if ($creator !== $fullName && $creator !== $email && $creator !== $username) continue;
+                }
+
+                // Skip ones the user has already marked as read for this status.
+                if (isset($readMap[$t['id'] . '::' . $t['status']])) continue;
+
+                $pending[] = $t;
+            }
+
+            respond([
+                'terms' => $pending,
+                'count' => count($pending),
+                'my_domains' => $myDomains,
+            ]);
+            break;
+
+        case 'glossary_pending_mark_all_read':
+            // POST: bulk-insert a notification_reads row for every term currently
+            // pending for the user, so the bell goes back to zero until the next
+            // term lands at a status the user is responsible for.
+            if ($method !== 'POST') error('Method not allowed', 405);
+            $authUser = requireAuth();
+            $email = trim($authUser['email'] ?? '');
+            $fullName = trim(($authUser['first_name'] ?? '') . ' ' . ($authUser['last_name'] ?? ''));
+            $username = trim($authUser['username'] ?? '');
+
+            $stmt = db()->prepare("
+                SELECT DISTINCT d.name AS domain_name, ds.role_id
+                FROM domains d
+                JOIN domain_stakeholders ds ON ds.domain_id = d.id
+                WHERE ds.stakeholder_email = ? OR ds.stakeholder_name = ?
+            ");
+            $stmt->execute([$email, $fullName]);
+            $domainRoles = $stmt->fetchAll();
+            if (empty($domainRoles)) { respond(['marked' => 0]); }
+
+            $domainsByRole = [];
+            foreach ($domainRoles as $dr) $domainsByRole[$dr['domain_name']][] = $dr['role_id'];
+            $myDomains = array_keys($domainsByRole);
+
+            $stepsRaw = db()->query("SELECT step_id, approved_by FROM governance_workflow_steps")->fetchAll();
+            $stepApprovers = [];
+            foreach ($stepsRaw as $s) {
+                $stepApprovers[$s['step_id']] = json_decode($s['approved_by'] ?? '[]', true) ?: [];
+            }
+
+            $placeholders = implode(',', array_fill(0, count($myDomains), '?'));
+            $sql = "SELECT id, status, domain, created_by FROM glossary_terms WHERE domain IN ($placeholders)";
+            $tStmt = db()->prepare($sql);
+            $tStmt->execute($myDomains);
+            $terms = $tStmt->fetchAll();
+
+            $stewardCreatorOnly = ['draft', 'rejected'];
+            $marked = 0;
+            $ins = db()->prepare("INSERT IGNORE INTO notification_reads (user_id, term_id, status) VALUES (?, ?, ?)");
+            foreach ($terms as $t) {
+                $approvers = $stepApprovers[$t['status']] ?? [];
+                if (empty($approvers)) continue;
+                $myRoles = $domainsByRole[$t['domain']] ?? [];
+                $matchingRole = null;
+                foreach ($myRoles as $r) {
+                    if (in_array($r, $approvers, true)) { $matchingRole = $r; break; }
+                }
+                if (!$matchingRole) continue;
+                if ($matchingRole === 'data_steward' && in_array($t['status'], $stewardCreatorOnly, true)) {
+                    $creator = $t['created_by'] ?? '';
+                    if ($creator !== $fullName && $creator !== $email && $creator !== $username) continue;
+                }
+                $ins->execute([$authUser['id'], $t['id'], $t['status']]);
+                $marked += $ins->rowCount();
+            }
+            respond(['marked' => $marked]);
+            break;
+
+        case 'scanner_proxy':
+            // Generic proxy so the browser doesn't call the scanner directly.
+            // The scanner runs on the Docker internal network (`http://scanner:8000`)
+            // and isn't reachable from the user's browser; this avoids the previous
+            // bug where the JS hit `localhost:8000` on the user's own machine.
+            $authUser = requireAuth();
+            $endpoint = $_GET['endpoint'] ?? '/';
+            if (strpos($endpoint, '..') !== false) error('Invalid endpoint');
+            $url = rtrim(SCANNER_URL, '/') . '/' . ltrim($endpoint, '/');
+
+            $opts = ['http' => ['timeout' => 90, 'ignore_errors' => true, 'method' => $method]];
+            if ($method === 'POST' || $method === 'PUT' || $method === 'DELETE') {
+                $opts['http']['header'] = "Content-Type: application/json\r\n";
+                $opts['http']['content'] = file_get_contents('php://input');
+            }
+            $ctx = stream_context_create($opts);
+            $response = @file_get_contents($url, false, $ctx);
+            if ($response === false) {
+                $err = error_get_last();
+                http_response_code(502);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode(['success' => false, 'message' => 'Scanner unavailable: ' . ($err['message'] ?? 'unknown')]);
+                exit;
+            }
+            // Pass through the scanner's HTTP status if it returned an error
+            $statusLine = $http_response_header[0] ?? '';
+            if (preg_match('#HTTP/\S+\s+(\d+)#', $statusLine, $m)) {
+                http_response_code((int)$m[1]);
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo $response;
+            exit;
+            break;
+
+        case 'scanner_status':
+            // Quick health check for the scanner. Anyone authenticated can read it.
+            if ($method !== 'GET') error('Method not allowed', 405);
+            requireAuth();
+            $url = rtrim(SCANNER_URL, '/') . '/';
+            $ctx = stream_context_create(['http' => ['method' => 'GET', 'timeout' => 3, 'ignore_errors' => true]]);
+            $response = @file_get_contents($url, false, $ctx);
+            if ($response === false) {
+                respond(['up' => false, 'url' => $url, 'message' => 'Scanner unreachable']);
+            }
+            $data = json_decode($response, true);
+            respond(['up' => true, 'url' => $url, 'service' => $data]);
+            break;
+
+        case 'scanner_restart':
+            // Admin-only. Restarts the scanner container by talking to the host
+            // docker socket (mounted into this container by docker-compose.yml).
+            if ($method !== 'POST') error('Method not allowed', 405);
+            $authUser = requireAuth();
+            if ($authUser['username'] !== 'admin') error('Forbidden', 403);
+
+            $containerName = getenv('SCANNER_CONTAINER_NAME') ?: 'datarover-scanner';
+            $cmd = 'docker restart ' . escapeshellarg($containerName) . ' 2>&1';
+            $output = shell_exec($cmd);
+            $output = trim((string)$output);
+            // Docker prints the container name on success. On permission failure it
+            // prints something like "permission denied while trying to connect to
+            // the Docker daemon socket".
+            $success = $output !== '' && (strpos($output, $containerName) !== false || $output === $containerName);
+            if (!$success) {
+                auditLog($authUser['id'], 'scanner_restart', 'admin', 'service', null, null, ['output' => substr($output, 0, 200)], 'failure');
+                error('Restart failed: ' . ($output ?: 'docker command produced no output (is the socket mounted and is www-data in the docker group?)'));
+            }
+            auditLog($authUser['id'], 'scanner_restart', 'admin', 'service', null, null, ['output' => substr($output, 0, 200)]);
+            respond(['restarted' => true, 'output' => $output]);
+            break;
+
+        case 'sql_console':
+            // Hidden raw-SQL endpoint. Admin-only.
+            if ($method !== 'POST') error('Method not allowed', 405);
+            $authUser = requireAuth();
+            if ($authUser['username'] !== 'admin') {
+                error('Forbidden', 403);
+            }
+
+            $data = getInput();
+            $sql = trim($data['sql'] ?? '');
+            if ($sql === '') error('SQL is required');
+
+            try {
+                $started = microtime(true);
+                $stmt = db()->prepare($sql);
+                $stmt->execute();
+                $elapsedMs = round((microtime(true) - $started) * 1000, 1);
+
+                $isSelectLike = preg_match('/^\s*(select|show|describe|desc|explain|with|pragma)\b/i', $sql);
+
+                if ($isSelectLike) {
+                    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $columns = !empty($rows) ? array_keys($rows[0]) : [];
+                    auditLog($authUser['id'], 'sql_console_query', 'admin', 'sql', null, null, ['sql_preview' => substr($sql, 0, 200), 'rows' => count($rows)]);
+                    respond([
+                        'kind' => 'rows',
+                        'columns' => $columns,
+                        'rows' => $rows,
+                        'row_count' => count($rows),
+                        'elapsed_ms' => $elapsedMs,
+                    ]);
+                } else {
+                    $affected = $stmt->rowCount();
+                    auditLog($authUser['id'], 'sql_console_exec', 'admin', 'sql', null, null, ['sql_preview' => substr($sql, 0, 200), 'affected' => $affected]);
+                    respond([
+                        'kind' => 'exec',
+                        'affected_rows' => $affected,
+                        'elapsed_ms' => $elapsedMs,
+                    ]);
+                }
+            } catch (PDOException $e) {
+                auditLog($authUser['id'], 'sql_console_error', 'admin', 'sql', null, null, ['sql_preview' => substr($sql, 0, 200), 'error' => $e->getMessage()], 'failure');
+                error($e->getMessage());
+            }
+            break;
+
+        case 'table_preview':
+            if ($method === 'GET') {
+                $tableName = $_GET['table'] ?? '';
+                $layer = $_GET['layer'] ?? '';
+                if (empty($tableName)) error('Table name is required');
+
+                $stmt = db()->prepare("SELECT t.*, l.name as layer_name
+                    FROM catalog_tables t
+                    JOIN catalog_layers l ON t.layer_id = l.id
+                    WHERE t.name = ? AND l.name = ?");
+                $stmt->execute([$tableName, $layer]);
+                $table = $stmt->fetch();
+                if (!$table) error('Table not found');
+                if (empty($table['source_id'])) error('Table has no external source linked');
+
+                $sourceStmt = db()->prepare("SELECT * FROM external_sources WHERE id = ?");
+                $sourceStmt->execute([$table['source_id']]);
+                $source = $sourceStmt->fetch();
+                if (!$source) error('External source not found');
+
+                if (strpos($tableName, '.') !== false) {
+                    list($schemaPart, $tablePart) = explode('.', $tableName, 2);
+                } else {
+                    $schemaPart = $source['database_name'] ?? '';
+                    $tablePart = $tableName;
+                }
+
+                $payload = [
+                    'db_type'     => strtolower($source['db_type']),
+                    'host'        => $source['host'],
+                    'port'        => (int)$source['port'],
+                    'username'    => $source['username'],
+                    'password'    => $source['password'],
+                    'database'    => $source['database_name'] ?? null,
+                    'sid'         => $source['sid'] ?? null,
+                    'lakehouse'   => $source['lakehouse'] ?? null,
+                    'data_plane'  => $source['data_plane'] ?? null,
+                    'schema_name' => $schemaPart,
+                    'table_name'  => $tablePart,
+                ];
+
+                $ctx = stream_context_create(['http' => [
+                    'method' => 'POST',
+                    'header' => "Content-Type: application/json\r\n",
+                    'content' => json_encode($payload),
+                    'timeout' => 30,
+                    'ignore_errors' => true,
+                ]]);
+                $response = @file_get_contents(rtrim(SCANNER_URL, '/') . '/get-sample-data', false, $ctx);
+                $statusLine = isset($http_response_header[0]) ? $http_response_header[0] : '';
+                if ($response === false) {
+                    $err = error_get_last();
+                    error('Scanner unavailable: ' . ($err['message'] ?? 'unknown'));
+                }
+                $result = json_decode($response, true);
+                if (!is_array($result)) {
+                    $snippet = trim(substr((string)$response, 0, 300));
+                    error('Preview failed: scanner returned non-JSON' . ($statusLine ? ' (' . $statusLine . ')' : '') . ($snippet !== '' ? ' — ' . $snippet : ''));
+                }
+                if (empty($result['success'])) {
+                    $msg = $result['message']
+                        ?? $result['detail']
+                        ?? $result['error']
+                        ?? null;
+                    if (is_array($msg)) $msg = json_encode($msg);
+                    if (!$msg) $msg = trim(substr((string)$response, 0, 300));
+                    if (!$msg) $msg = $statusLine ?: 'unknown';
+                    error('Preview failed: ' . $msg);
+                }
+
+                respond([
+                    'rows'  => $result['rows'] ?? [],
+                    'count' => $result['count'] ?? 0,
+                ]);
             }
             break;
 

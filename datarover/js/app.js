@@ -115,6 +115,8 @@ function handleAuthError() {
     userPermissions = [];
     userRoles = [];
     localStorage.removeItem('authToken');
+    // Drop every cached payload so the next login starts from a clean slate.
+    invalidateCache('all');
     showLoginPage();
 }
 
@@ -174,9 +176,13 @@ async function login(username, password) {
         currentUser = result.data.user;
         userRoles = result.data.roles || [];
         userPermissions = result.data.permissions || [];
-        
+
         localStorage.setItem('authToken', authToken);
-        
+
+        // New user just logged in — drop every cached payload so the next render
+        // re-fetches with this user's identity (visibility filter depends on it).
+        invalidateCache('all');
+
         // Check if must change password
         if (currentUser.must_change_password) {
             showChangePasswordModal(true);
@@ -211,6 +217,8 @@ async function logout() {
     userPermissions = [];
     userRoles = [];
     localStorage.removeItem('authToken');
+    // Drop every cached payload so the next login starts from a clean slate.
+    invalidateCache('all');
     showLoginPage();
 }
 
@@ -302,6 +310,7 @@ async function loginSSOUser(userInfo) {
             userRoles = result.data.roles || [];
             userPermissions = result.data.permissions || [];
             localStorage.setItem('authToken', authToken);
+            invalidateCache('all');
             initApp();
             loadDashboard();
         } else {
@@ -423,14 +432,6 @@ function showLoginPage() {
                         </button>
                     </form>
 
-                    <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #1e293b;">
-                        <p style="margin: 0; color: #475569; font-size: 12px; text-align: center;">
-                            Lokal: <span style="color: #94a3b8;">admin</span> / <span style="color: #94a3b8;">Admin@123</span>
-                        </p>
-                        <p style="margin: 8px 0 0; color: #475569; font-size: 12px; text-align: center;">
-                            LDAP: <span style="color: #94a3b8;">ldapadmin</span> / <span style="color: #94a3b8;">ldap123</span>
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>
@@ -614,6 +615,7 @@ async function loginWithLDAP(username, password) {
             userRoles = result.data.roles || [];
             userPermissions = result.data.permissions || [];
             localStorage.setItem('authToken', authToken);
+            invalidateCache('all');
             return { success: true };
         } else {
             return { success: false, error: result.error || 'Login uğursuz' };
@@ -1038,7 +1040,7 @@ function getDashboardHTML() {
                 '</div>' +
                 '<div class="dash-card-body">' +
                     '<div class="dash-quick-actions">' +
-                        '<div class="dash-action-btn" onclick="showAddTermModal()"><div class="dash-action-icon">' + svgIcon('pen', 20) + '</div><div class="dash-action-text">Termin Əlavə Et</div></div>' +
+                        (canCreateTerm() ? '<div class="dash-action-btn" onclick="showAddTermModal()"><div class="dash-action-icon">' + svgIcon('pen', 20) + '</div><div class="dash-action-text">Termin Əlavə Et</div></div>' : '') +
                         '<div class="dash-action-btn" onclick="showAddReportModal()"><div class="dash-action-icon">' + svgIcon('chart', 20) + '</div><div class="dash-action-text">Hesabat Əlavə Et</div></div>' +
                         '<div class="dash-action-btn" onclick="loadLineage()"><div class="dash-action-icon">' + svgIcon('link', 20) + '</div><div class="dash-action-text">Mənşəyə Bax</div></div>' +
                         '<div class="dash-action-btn" onclick="loadColumnMapper()"><div class="dash-action-icon">' + svgIcon('zap', 20) + '</div><div class="dash-action-text">Mapping Yarat</div></div>' +
@@ -3569,11 +3571,13 @@ function loadGlossary() {
     window._glossaryFilters = { search: '', domain: '', status: '' };
     glossaryPagination.currentPage = 1;
 
-    // Load all data from database
-    loadCatalogFromStorage(true);  // Load catalog data for physical attributes
-    loadDomainsFromDB();  // Load domains first
-    loadGlossaryFromStorage();
-    loadGovernanceFromStorage();
+    // Load all data from database. Force reload so the visibility filter (which
+    // depends on the current user) is always re-applied — cached results from a
+    // previous session/user must not leak through.
+    loadCatalogFromStorage(true);
+    loadDomainsFromDB();
+    loadGlossaryFromStorage(true);
+    loadGovernanceFromStorage(true);
     
     var html = getGlossaryStyles();
 
@@ -3596,11 +3600,11 @@ function loadGlossary() {
             '<div class="stat-inline-divider"></div>' +
             '<div class="stat-inline"><span class="stat-inline-dot" style="background:#2563eb;"></span><span class="stat-inline-value">' + approvedTerms + '</span><span class="stat-inline-label">' + t('Approved') + '</span></div>' +
             '<div class="stat-inline"><span class="stat-inline-dot" style="background:#93c5fd;"></span><span class="stat-inline-value">' + draftTerms + '</span><span class="stat-inline-label">' + t('Draft') + '</span></div>' +
-            '<div class="stat-inline"><span class="stat-inline-dot" style="background:#60a5fa;"></span><span class="stat-inline-value">' + reviewTerms + '</span><span class="stat-inline-label">' + t('In Review') + '</span></div>' +
+            '<div class="stat-inline"><span class="stat-inline-dot" style="background:#60a5fa;"></span><span class="stat-inline-value">' + reviewTerms + '</span><span class="stat-inline-label">Yoxlamada</span></div>' +
             '<div class="stat-inline"><span class="stat-inline-dot" style="background:#1d4ed8;"></span><span class="stat-inline-value">' + totalDomains + '</span><span class="stat-inline-label">' + t('Domains') + '</span></div>' +
         '</div>' +
         '<div class="glossary-actions">' +
-            '<button class="glossary-btn" onclick="showAddTermModal()">' + svgIcon('plus', 14) + ' ' + t('Add Term') + '</button>' +
+            (canCreateTerm() ? '<button class="glossary-btn" onclick="showAddTermModal()">' + svgIcon('plus', 14) + ' ' + t('Add Term') + '</button>' : '') +
             '<button class="glossary-btn glossary-btn-secondary" onclick="exportGlossary()">' + svgIcon('upload', 14) + ' ' + t('Export') + '</button>' +
         '</div>' +
     '</div>';
@@ -4027,6 +4031,7 @@ function loadWorkflowStepsFromDB() {
                 
                 return {
                     id: s.step_id,
+                    dbId: s.id,
                     name: s.name,
                     icon: s.icon,
                     color: s.color,
@@ -4181,6 +4186,7 @@ function loadGlossaryFromStorage(forceReload) {
                     deletedAt: t.deleted_at,
                     deletedBy: t.deleted_by,
                     createdAt: t.created_at,
+                    createdBy: t.created_by,
                     updatedAt: t.updated_at
                 };
             });
@@ -4661,8 +4667,9 @@ function renderTermsTable() {
     var visibleTerms = glossaryData.terms.filter(function(t, idx) {
         t._originalIndex = idx; // Store original index for actions
 
-        // Check deleted status
-        if (t.status === 'deleted' && !isGovernance) {
+        // Hide soft-deleted and deprecated terms from regular listing — only governance
+        // mode (audit / archive view) shows them. Status filter still overrides this.
+        if (!filters.status && !isGovernance && (t.status === 'deleted' || t.status === 'deprecated')) {
             return false;
         }
 
@@ -4687,7 +4694,7 @@ function renderTermsTable() {
     });
 
     if (visibleTerms.length === 0) {
-        return '<div class="empty-state"><div class="empty-icon">' + svgIcon('book', 40) + '</div><p style="font-size: 16px; font-weight: 600; color: #64748b;">' + t('No terms found') + '</p><p style="font-size: 14px; margin: 12px 0;">' + t('Click the button above to add the first term') + '</p><button class="glossary-btn" onclick="showAddTermModal()">' + svgIcon('plus', 14) + ' ' + t('Add Term') + '</button></div>';
+        return '<div class="empty-state"><div class="empty-icon">' + svgIcon('book', 40) + '</div><p style="font-size: 16px; font-weight: 600; color: #64748b;">' + t('No terms found') + '</p><p style="font-size: 14px; margin: 12px 0;">' + t('Click the button above to add the first term') + '</p>' + (canCreateTerm() ? '<button class="glossary-btn" onclick="showAddTermModal()">' + svgIcon('plus', 14) + ' ' + t('Add Term') + '</button>' : '') + '</div>';
     }
 
     // Pagination setup
@@ -4784,10 +4791,12 @@ function renderTermsTable() {
             html += '<button onclick="restoreTerm(' + idx + ')" title="Bərpa et" style="background: #dbeafe; color: #2563eb;">' + svgIcon('refresh', 14) + '</button>';
             html += '<button class="delete" onclick="permanentDeleteTerm(' + idx + ')" title="Həmişəlik sil" style="background: #bfdbfe; color: #1e40af;">' + svgIcon('trash', 14) + '</button>';
         } else {
-            html += '<button onclick="editTerm(' + idx + ')" title="Redaktə">' + svgIcon('edit', 14) + '</button>';
-            
+            if (canEditTerm(term)) {
+                html += '<button onclick="editTerm(' + idx + ')" title="Redaktə">' + svgIcon('edit', 14) + '</button>';
+            }
+
             // Dynamic workflow action buttons
-            if (currentStep) {
+            if (currentStep && canActOnStep(term, currentStep)) {
                 // Approve button (move to next step)
                 if (currentStep.nextStep) {
                     var nextStep = governanceData.workflowSteps.find(function(s) { return s.id === currentStep.nextStep; });
@@ -4795,7 +4804,7 @@ function renderTermsTable() {
                         html += '<button class="approve" onclick="advanceTermStatus(' + idx + ')" title="' + nextStep.name + ' et">' + nextStep.icon + '</button>';
                     }
                 }
-                
+
                 // Reject button (move to reject step)
                 if (currentStep.rejectStep) {
                     html += '<button class="reject" onclick="rejectTermStatus(' + idx + ')" title="İmtina et" style="background: #bfdbfe; color: #1e40af;">' + svgIcon('x', 14) + '</button>';
@@ -4807,7 +4816,10 @@ function renderTermsTable() {
                 }
             }
             
-            html += '<button class="delete" onclick="deleteTerm(' + idx + ')" title="Sil">' + svgIcon('trash', 14) + '</button>';
+            // Delete only for admin or assigned stewards on a draft. Domain owners cannot delete.
+            if (canDeleteTerm(term)) {
+                html += '<button class="delete" onclick="deleteTerm(' + idx + ')" title="Sil">' + svgIcon('trash', 14) + '</button>';
+            }
         }
         
         html += '</div></td></tr>';
@@ -4912,12 +4924,15 @@ function advanceTermStatus(index) {
     
     // Get domain stakeholders
     var domain = glossaryData.domains.find(function(d) { return d.name === term.domain; });
+
+    // The label "Təsdiqləyəcək" means "the person who will act on this term at the
+    // NEXT step" — so we show stakeholders from `nextStep.approvedBy`. For terminal
+    // steps (no next-approver) we fall back to the current step's actor.
+    var displayRoles = (nextStep.approvedBy && nextStep.approvedBy.length) ? nextStep.approvedBy : (currentStep.approvedBy || []);
     var approvers = [];
-    
-    // Get approvers based on nextStep.approvedBy roles
-    if (nextStep.approvedBy && domain && domain.stakeholders) {
-        nextStep.approvedBy.forEach(function(roleId) {
-            var roleKey = roleId + 's'; // e.g., 'domain_owner' -> 'domain_owners'
+    if (domain && domain.stakeholders) {
+        displayRoles.forEach(function(roleId) {
+            var roleKey = roleId + 's'; // 'domain_owner' -> 'domain_owners'
             if (domain.stakeholders[roleKey]) {
                 domain.stakeholders[roleKey].forEach(function(name) {
                     var role = governanceData.roles.find(function(r) { return r.id === roleId; });
@@ -4941,21 +4956,36 @@ function advanceTermStatus(index) {
     // Reset modal display
     modal.style.cssText = 'display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center;';
     
-    var approverOptions = '';
-    
-    if (approvers.length > 0) {
-        approvers.forEach(function(a, idx) {
-            approverOptions += '<label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; background: ' + (idx === 0 ? '#eff6ff' : '#f8fafc') + '; border: 2px solid ' + (idx === 0 ? '#3b82f6' : '#e5e7eb') + '; border-radius: 10px; margin-bottom: 8px; transition: all 0.2s;">' +
-                '<input type="radio" name="approverSelect" value="' + a.name + '" ' + (idx === 0 ? 'checked' : '') + ' style="width: 18px; height: 18px;">' +
-                '<div style="width: 36px; height: 36px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">' + getInitials(a.name) + '</div>' +
-                '<div><div style="font-size: 14px; font-weight: 600;">' + a.name + '</div>' +
-                '<div style="font-size: 12px; color: #64748b;">' + a.role.icon + ' ' + a.role.name + '</div></div>' +
-            '</label>';
-        });
+    var isAdminUser = currentUser && currentUser.username === 'admin';
+
+    var approverSection = '';
+    if (isAdminUser) {
+        // Admin keeps the explicit approver picker.
+        var approverOptions = '';
+        if (approvers.length > 0) {
+            approvers.forEach(function(a, idx) {
+                approverOptions += '<label style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; background: ' + (idx === 0 ? '#eff6ff' : '#f8fafc') + '; border: 2px solid ' + (idx === 0 ? '#3b82f6' : '#e5e7eb') + '; border-radius: 10px; margin-bottom: 8px; transition: all 0.2s;">' +
+                    '<input type="radio" name="approverSelect" value="' + a.name + '" ' + (idx === 0 ? 'checked' : '') + ' style="width: 18px; height: 18px;">' +
+                    '<div style="width: 36px; height: 36px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600;">' + getInitials(a.name) + '</div>' +
+                    '<div><div style="font-size: 14px; font-weight: 600;">' + a.name + '</div>' +
+                    '<div style="font-size: 12px; color: #64748b;">' + a.role.icon + ' ' + a.role.name + '</div></div>' +
+                '</label>';
+            });
+        } else {
+            approverOptions = '<div style="padding: 20px; text-align: center; color: #94a3b8;">Bu mərhələ üçün təsdiqləyici təyin edilməyib</div>';
+        }
+        approverSection =
+            '<div style="margin-bottom: 16px;">' +
+                '<label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 8px;">' + svgIcon('user', 12) + ' Təsdiqləyən şəxs seçin:</label>' +
+                approverOptions +
+            '</div>';
     } else {
-        approverOptions = '<div style="padding: 20px; text-align: center; color: #94a3b8;">Bu mərhələ üçün təsdiqləyici təyin edilməyib</div>';
+        // Non-admin path: no approver picker / no "kim ediləcək" line — the current
+        // logged-in user is implicitly the actor. The header already conveys the
+        // transition (e.g. "Approved → Published") which is enough confirmation.
+        approverSection = '';
     }
-    
+
     modal.innerHTML = '<div style="width: 90%; max-width: 500px; background: white; border-radius: 12px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); overflow: hidden;">' +
         '<div style="padding: 16px 20px; background: linear-gradient(135deg, #eff6ff, #dbeafe); border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">' +
             '<span style="font-size: 16px; font-weight: 600; color: #1e293b;">' + nextStep.icon + ' ' + currentStep.name + ' → ' + nextStep.name + '</span>' +
@@ -4965,10 +4995,7 @@ function advanceTermStatus(index) {
             '<div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 10px; padding: 14px; margin-bottom: 16px;">' +
                 '<div style="font-size: 13px; color: #1e40af;"><strong>"' + term.name + '"</strong> terminini <strong>' + nextStep.name + '</strong> mərhələsinə keçirmək istəyirsiniz?</div>' +
             '</div>' +
-            '<div style="margin-bottom: 16px;">' +
-                '<label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 8px;">' + svgIcon('user', 12) + ' Təsdiqləyən şəxs seçin:</label>' +
-                approverOptions +
-            '</div>' +
+            approverSection +
             '<div>' +
                 '<label style="display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px;">' + svgIcon('message', 12) + ' Komment (istəyə bağlı)</label>' +
                 '<textarea id="approveComment" rows="2" placeholder="Təsdiq haqqında qeyd..." style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>' +
@@ -4983,7 +5010,16 @@ function advanceTermStatus(index) {
 
 function confirmAdvanceStatus(index, fromStepId, toStepId) {
     var approverRadio = document.querySelector('input[name="approverSelect"]:checked');
-    var approver = approverRadio ? approverRadio.value : 'System';
+    var approver;
+    if (approverRadio) {
+        // Admin explicitly picked someone (e.g. acting on behalf of an owner)
+        approver = approverRadio.value;
+    } else {
+        // Non-admin: the current logged-in user is the actor performing the transition.
+        approver = currentUser
+            ? (((currentUser.first_name || '') + ' ' + (currentUser.last_name || '')).trim() || currentUser.username || 'System')
+            : 'System';
+    }
     var comment = document.getElementById('approveComment').value.trim();
     
     var fromStep = governanceData.workflowSteps.find(function(s) { return s.id === fromStepId; });
@@ -5165,13 +5201,16 @@ function resubmitTerm(index) {
 }
 
 function renderDomainsTab() {
+    var canManage = canManageGovernance();
     var html = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">' +
-        '<div style="font-size: 14px; font-weight: 600; color: #0f172a;">' + svgIcon('folder', 16) + ' ' + t('Business Domains') + '</div>' +
-        '<button class="glossary-btn" onclick="showAddDomainModal()" style="padding: 7px 14px; font-size: 12px;">' + svgIcon('plus', 13) + ' ' + t('Add Domain') + '</button>' +
+        '<div style="font-size: 14px; font-weight: 600; color: #0f172a;">' + svgIcon('folder', 16) + ' ' + t('Business Domains') +
+            (canManage ? '' : ' <span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-left:8px;">Read-only</span>') +
+        '</div>' +
+        (canManage ? '<button class="glossary-btn" onclick="showAddDomainModal()" style="padding: 7px 14px; font-size: 12px;">' + svgIcon('plus', 13) + ' ' + t('Add Domain') + '</button>' : '') +
     '</div>';
 
     if (glossaryData.domains.length === 0) {
-        return html + '<div class="empty-state"><div class="empty-icon">' + svgIcon('folder', 40) + '</div><p style="font-size: 16px; font-weight: 600; color: #64748b;">' + t('No domains found') + '</p><button class="glossary-btn" onclick="showAddDomainModal()">' + svgIcon('plus', 14) + ' ' + t('Add Domain') + '</button></div>';
+        return html + '<div class="empty-state"><div class="empty-icon">' + svgIcon('folder', 40) + '</div><p style="font-size: 16px; font-weight: 600; color: #64748b;">' + t('No domains found') + '</p>' + (canManage ? '<button class="glossary-btn" onclick="showAddDomainModal()">' + svgIcon('plus', 14) + ' ' + t('Add Domain') + '</button>' : '') + '</div>';
     }
 
     html += '<div class="domains-table-wrap"><table class="domains-table"><thead><tr>' +
@@ -5203,7 +5242,7 @@ function renderDomainsTab() {
             '</td>' +
             '<td><div class="term-actions">' +
                 '<button onclick="event.stopPropagation(); copyElementLink(\'/glossary/domain/' + encodeURIComponent(domain.name) + '\')" title="' + t('Copy link') + '">' + svgIcon('link', 14) + '</button>' +
-                '<button class="delete" onclick="event.stopPropagation(); deleteDomain(' + idx + ')" title="' + t('Delete') + '">' + svgIcon('trash', 14) + '</button>' +
+                (canManage ? '<button class="delete" onclick="event.stopPropagation(); deleteDomain(' + idx + ')" title="' + t('Delete') + '">' + svgIcon('trash', 14) + '</button>' : '') +
             '</div></td>' +
         '</tr>';
     });
@@ -5213,9 +5252,12 @@ function renderDomainsTab() {
 }
 
 function renderStakeholdersTab() {
+    var canManage = canManageGovernance();
     var html = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">' +
-        '<div style="font-size: 14px; font-weight: 600; color: #0f172a;">' + svgIcon('users', 16) + ' ' + t('Stakeholders') + '</div>' +
-        '<button class="glossary-btn" onclick="showAddStakeholderModal()" style="padding: 7px 14px; font-size: 12px;">' + svgIcon('plus', 13) + ' ' + t('Add Stakeholder') + '</button>' +
+        '<div style="font-size: 14px; font-weight: 600; color: #0f172a;">' + svgIcon('users', 16) + ' ' + t('Stakeholders') +
+            (canManage ? '' : ' <span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-left:8px;">Read-only</span>') +
+        '</div>' +
+        (canManage ? '<button class="glossary-btn" onclick="showAddStakeholderModal()" style="padding: 7px 14px; font-size: 12px;">' + svgIcon('plus', 13) + ' ' + t('Add Stakeholder') + '</button>' : '') +
     '</div>';
 
     // Roles legend
@@ -5229,7 +5271,7 @@ function renderStakeholdersTab() {
     html += '</div>';
 
     if (governanceData.stakeholders.length === 0) {
-        return html + '<div class="empty-state"><div class="empty-icon">' + svgIcon('users', 40) + '</div><p style="font-size: 16px; font-weight: 600; color: #64748b;">' + t('No stakeholders found') + '</p><button class="glossary-btn" onclick="showAddStakeholderModal()">' + svgIcon('plus', 14) + ' ' + t('Add Stakeholder') + '</button></div>';
+        return html + '<div class="empty-state"><div class="empty-icon">' + svgIcon('users', 40) + '</div><p style="font-size: 16px; font-weight: 600; color: #64748b;">' + t('No stakeholders found') + '</p>' + (canManage ? '<button class="glossary-btn" onclick="showAddStakeholderModal()">' + svgIcon('plus', 14) + ' ' + t('Add Stakeholder') + '</button>' : '') + '</div>';
     }
 
     html += '<div class="stakeholders-table-wrap"><table class="stakeholders-table"><thead><tr>' +
@@ -5271,8 +5313,8 @@ function renderStakeholdersTab() {
         html += '</td>' +
             '<td><div class="term-actions">' +
                 '<button onclick="copyElementLink(\'/glossary/stakeholder/' + (user.id || idx) + '\')" title="' + t('Copy link') + '">' + svgIcon('link', 14) + '</button>' +
-                '<button onclick="editStakeholder(' + idx + ')" title="' + t('Edit') + '">' + svgIcon('edit', 14) + '</button>' +
-                '<button class="delete" onclick="deleteStakeholder(' + idx + ')" title="' + t('Delete') + '">' + svgIcon('trash', 14) + '</button>' +
+                (canManage ? '<button onclick="editStakeholder(' + idx + ')" title="' + t('Edit') + '">' + svgIcon('edit', 14) + '</button>' : '') +
+                (canManage ? '<button class="delete" onclick="deleteStakeholder(' + idx + ')" title="' + t('Delete') + '">' + svgIcon('trash', 14) + '</button>' : '') +
             '</div></td>' +
         '</tr>';
     });
@@ -5282,14 +5324,17 @@ function renderStakeholdersTab() {
 }
 
 function renderWorkflowTab() {
+    var isWorkflowAdmin = currentUser && currentUser.username === 'admin';
     var html = '';
-    
+
     // Main Workflow Diagram
     html += '<div class="workflow-diagram">' +
         '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">' +
-            '<h3 style="font-size: 16px; font-weight: 700;">' + svgIcon('chart', 16) + ' ' + t('Workflow Process') + '</h3>' +
+            '<h3 style="font-size: 16px; font-weight: 700;">' + svgIcon('chart', 16) + ' ' + t('Workflow Process') +
+                (isWorkflowAdmin ? '' : ' <span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;margin-left:8px;">Read-only</span>') +
+            '</h3>' +
             '<div style="display: flex; gap: 8px;">' +
-                '<button class="glossary-btn glossary-btn-secondary" onclick="showAddWorkflowStepModal()">' + svgIcon('plus', 13) + ' ' + t('Add Step') + '</button>' +
+                (isWorkflowAdmin ? '<button class="glossary-btn glossary-btn-secondary" onclick="showAddWorkflowStepModal()">' + svgIcon('plus', 13) + ' ' + t('Add Step') + '</button>' : '') +
             '</div>' +
         '</div>';
     
@@ -5319,7 +5364,7 @@ function renderWorkflowTab() {
         }).join(', ');
         
         html += '<div class="workflow-step workflow-step-card" data-step="' + step.name + '" style="border-color: #3b82f6; background: #eff6ff; position: relative;">' +
-            '<button onclick="editWorkflowStep(\'' + step.id + '\')" style="position: absolute; top: 8px; right: 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display:flex;align-items:center;justify-content:center;">' + svgIcon('edit', 12) + '</button>' +
+            (isWorkflowAdmin ? '<button onclick="editWorkflowStep(\'' + step.id + '\')" style="position: absolute; top: 8px; right: 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display:flex;align-items:center;justify-content:center;">' + svgIcon('edit', 12) + '</button>' : '') +
             '<div class="workflow-step-icon">' + step.icon + '</div>' +
             '<div class="workflow-step-name" style="color: #1d4ed8;">' + step.name + '</div>' +
             '<div class="workflow-step-desc">';
@@ -5357,7 +5402,7 @@ function renderWorkflowTab() {
         
         rejectSteps.forEach(function(step) {
             html += '<div class="workflow-step workflow-step-card" data-step="' + step.name + '" style="border-color: #94a3b8; background: #f8fafc; min-width: 150px;">' +
-                '<button onclick="editWorkflowStep(\'' + step.id + '\')" style="position: absolute; top: 8px; right: 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display:flex;align-items:center;justify-content:center;">' + svgIcon('edit', 12) + '</button>' +
+                (isWorkflowAdmin ? '<button onclick="editWorkflowStep(\'' + step.id + '\')" style="position: absolute; top: 8px; right: 8px; background: white; border: 1px solid #e5e7eb; border-radius: 4px; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display:flex;align-items:center;justify-content:center;">' + svgIcon('edit', 12) + '</button>' : '') +
                 '<div class="workflow-step-icon">' + step.icon + '</div>' +
                 '<div class="workflow-step-name" style="color: #475569;">' + step.name + '</div>';
 
@@ -6923,12 +6968,22 @@ function saveWorkflowStep(editId) {
     setTimeout(function() { showGlossaryTab('workflow'); }, 100);
 }
 
-function deleteWorkflowStep(stepId) {
+async function deleteWorkflowStep(stepId) {
     if (!confirm('Bu workflow addımını silmək istəyirsiniz?')) return;
-    
+
+    var step = governanceData.workflowSteps.find(function(s) { return s.id === stepId; });
+    if (step && step.dbId) {
+        try {
+            await apiCall('governance_steps', 'DELETE', null, step.dbId);
+        } catch (e) {
+            alert('Silinmə uğursuz: ' + (e && e.message ? e.message : 'naməlum'));
+            return;
+        }
+    }
+
     governanceData.workflowSteps = governanceData.workflowSteps.filter(function(s) { return s.id !== stepId; });
-    saveGovernanceToStorage();
     closeGlossaryModal();
+    if (typeof loadWorkflowStepsFromDB === 'function') loadWorkflowStepsFromDB();
     loadGlossary();
     setTimeout(function() { showGlossaryTab('workflow'); }, 100);
 }
@@ -7297,10 +7352,14 @@ function updateDomainStakeholders() {
             '<div style="font-size: 11px; font-weight: 600; color: #3b82f6; margin-bottom: 10px;">🛡️ Data Stewards <span style="font-weight: 400; color: #94a3b8;">- bir neçə seçə bilərsiniz</span></div>' +
             '<div style="display: flex; flex-wrap: wrap; gap: 10px;">';
         
+        // Auto-check the current user only if they happen to be a steward of this domain;
+        // otherwise leave all checkboxes unchecked so the author explicitly picks.
+        var myFullName = currentUser ? ((currentUser.first_name || '') + ' ' + (currentUser.last_name || '')).trim() : '';
         domain.stakeholders.data_stewards.forEach(function(steward) {
+            var preChecked = (steward === myFullName) ? 'checked' : '';
             html += '<label style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; cursor: pointer; background: #f0f9ff; border: 1px solid #bfdbfe; border-radius: 8px; transition: all 0.2s;">' +
-                '<input type="checkbox" class="steward-checkbox" value="' + steward + '" data-role="data_steward" style="width: 16px; height: 16px; cursor: pointer;" checked>' +
-                '<div style="width: 24px; height: 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">' + 
+                '<input type="checkbox" class="steward-checkbox" value="' + steward + '" data-role="data_steward" style="width: 16px; height: 16px; cursor: pointer;" ' + preChecked + '>' +
+                '<div style="width: 24px; height: 24px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">' +
                 getInitials(steward) + '</div>' +
                 '<span style="font-size: 13px; font-weight: 500;">' + steward + '</span>' +
             '</label>';
@@ -7746,9 +7805,12 @@ function saveTerm(editIndex) {
             }
         }
         
-        // Collect selected stewards from checkboxes
+        // Collect selected stewards from checkboxes (deduplicate by name)
         var selectedStewards = [];
+        var _stewardSeen = {};
         document.querySelectorAll('.steward-checkbox:checked').forEach(function(cb) {
+            if (_stewardSeen[cb.value]) return;
+            _stewardSeen[cb.value] = 1;
             selectedStewards.push({
                 name: cb.value,
                 role: cb.getAttribute('data-role')
@@ -7776,8 +7838,9 @@ function saveTerm(editIndex) {
                 newStatus = oldStatus;
             }
         } else {
-            // NEW TERM
-            newStatus = useWorkflow ? (firstStep ? firstStep.id : 'draft') : (lastStep ? lastStep.id : 'published');
+            // NEW TERM — always start in draft so the author can review their own work
+            // before submitting it to the next workflow step.
+            newStatus = 'draft';
         }
         
         var term = {
@@ -7876,6 +7939,210 @@ function saveTerm(editIndex) {
         console.error('saveTerm error:', e);
         alert('Xəta baş verdi: ' + e.message);
     }
+}
+
+// True if the current user is allowed to create new glossary terms.
+// Rule: admin, or anyone who is a `data_steward` of at least one domain.
+function canCreateTerm() {
+    if (!currentUser) return false;
+    if (currentUser.username === 'admin') return true;
+    var myFullName = ((currentUser.first_name || '') + ' ' + (currentUser.last_name || '')).trim();
+    if (!glossaryData || !glossaryData.domains) return false;
+    for (var i = 0; i < glossaryData.domains.length; i++) {
+        var d = glossaryData.domains[i];
+        var stewards = (d.stakeholders && d.stakeholders.data_stewards) || [];
+        if (stewards.indexOf(myFullName) !== -1) return true;
+    }
+    return false;
+}
+
+// Reopen a term so it can be edited again. The workflow restarts (status → draft).
+// - published / approved: only one of the term's assigned stewards can reopen.
+// - deprecated: assigned steward, or any data_steward of the term's domain (so a
+//   term whose original stewards have moved on can still be revived).
+function canReopenTerm(term) {
+    if (!term) return false;
+    if (currentUser && currentUser.username === 'admin') return true;
+
+    var assigned = isCurrentUserAssignedSteward(term);
+
+    if (term.status === 'published' || term.status === 'approved') {
+        return assigned;
+    }
+    if (term.status === 'deprecated') {
+        if (assigned) return true;
+        var roles = getCurrentUserRolesForTerm(term);
+        return roles.indexOf('data_steward') !== -1;
+    }
+    return false;
+}
+
+async function reopenTerm(termId) {
+    if (!confirm('Termini yenidən redaktə üçün açırsınız. O Draft statusuna qayıdacaq və yenidən təsdiq prosesindən keçməlidir. Cari versiya saxlanılacaq. Davam edək?')) return;
+    try {
+        // Direct fetch (bypasses apiCall null-on-error so we can see the real reason)
+        var getResp = await fetch(API + '?action=glossary_terms&id=' + encodeURIComponent(termId), {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        var getJson = await getResp.json();
+        if (!getJson.success) {
+            alert('Termini yükləmək alınmadı (id=' + termId + '): ' + (getJson.error || getResp.status));
+            return;
+        }
+        var existing = getJson.data;
+        existing.status = 'draft';
+        existing.rejectReason = null;
+        existing.snapshot_action = 'reopened';
+        var putResp = await fetch(API + '?action=glossary_terms&id=' + encodeURIComponent(termId), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+            body: JSON.stringify(existing)
+        });
+        var putJson = await putResp.json();
+        if (!putJson.success) {
+            alert('Yeniləmə uğursuz: ' + (putJson.error || putResp.status));
+            return;
+        }
+        showToast('Termin Draft-a qaytarıldı, redaktə edə bilərsən');
+        location.reload();
+    } catch (e) {
+        console.error('reopenTerm error:', e);
+        alert('Xəta: ' + e.message);
+    }
+}
+
+async function showTermVersions(termId) {
+    var existing = document.getElementById('termVersionsModal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'termVersionsModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10001;';
+    modal.innerHTML =
+        '<div style="background:white;border-radius:12px;width:780px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">' +
+                '<h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:10px;">📚 Versiya Tarixçəsi</h3>' +
+                '<button onclick="document.getElementById(\'termVersionsModal\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;">&times;</button>' +
+            '</div>' +
+            '<div id="termVersionsBody" style="padding:16px 20px;overflow:auto;flex:1;">⏳ Yüklənir...</div>' +
+        '</div>';
+    document.body.appendChild(modal);
+
+    var versions;
+    try {
+        versions = await apiCall('glossary_term_versions', 'GET', null, null) || [];
+    } catch (e) { versions = []; }
+    // Above will use no params; better: fetch with term_id query
+    try {
+        var response = await fetch(API + '?action=glossary_term_versions&term_id=' + encodeURIComponent(termId), {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        var result = await response.json();
+        versions = (result.success && Array.isArray(result.data)) ? result.data : [];
+    } catch (e) { /* keep previous */ }
+
+    var body = document.getElementById('termVersionsBody');
+    if (!body) return;
+
+    if (!versions.length) {
+        body.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b;">Hələ heç bir versiya saxlanmayıb. Termin publish olunduqda və ya yenidən açıldıqda yaranır.</div>';
+        return;
+    }
+
+    var actionStyles = {
+        published:  { bg: '#dcfce7', color: '#166534', icon: '🚀' },
+        reopened:   { bg: '#fef3c7', color: '#92400e', icon: '🔄' },
+        deprecated: { bg: '#f3f4f6', color: '#374151', icon: '⛔' }
+    };
+
+    var html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    versions.forEach(function(v) {
+        var st = actionStyles[v.snapshot_action] || { bg: '#e0e7ff', color: '#4338ca', icon: '📌' };
+        html += '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;">' +
+            '<div style="background:' + st.bg + ';color:' + st.color + ';width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;">' + st.icon + '</div>' +
+            '<div style="flex:1;">' +
+                '<div style="font-weight:600;font-size:14px;color:#1e293b;">v' + v.version_number + ' · ' + (v.snapshot_action || 'snapshot') + '</div>' +
+                '<div style="color:#64748b;font-size:12px;">' + (v.snapshot_by || 'system') + ' · ' + (v.snapshot_at || '') + '</div>' +
+                (v.name ? '<div style="margin-top:4px;font-size:12px;color:#475569;">📖 ' + v.name + '</div>' : '') +
+            '</div>' +
+            '<button onclick="viewTermVersion(' + v.id + ')" style="padding:6px 12px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;">Bax</button>' +
+        '</div>';
+    });
+    html += '</div>';
+    body.innerHTML = html;
+}
+
+async function viewTermVersion(versionId) {
+    var response = await fetch(API + '?action=glossary_term_versions&id=' + versionId, {
+        headers: { 'Authorization': 'Bearer ' + authToken }
+    });
+    var result = await response.json();
+    if (!result.success) { alert(result.error || 'Versiya yüklənmədi'); return; }
+    var v = result.data;
+    var html = '<div style="background:white;padding:24px;border-radius:12px;max-width:680px;width:95vw;max-height:85vh;overflow:auto;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+            '<h3 style="margin:0;font-size:16px;">v' + v.version_number + ' — ' + (v.name || '') + '</h3>' +
+            '<button onclick="document.getElementById(\'termVersionViewModal\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;">&times;</button>' +
+        '</div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px;">';
+    [['Status', v.status], ['Domain', v.domain], ['Definition', v.definition], ['Owner', v.owner], ['Created By', v.created_by],
+     ['Data Type', v.data_type], ['Example', v.example], ['Formula', v.formula], ['Business Logic', v.business_logic],
+     ['Technical Desc', v.technical_description], ['Source System', v.source_system], ['Notes', v.notes],
+     ['Snapshot Action', v.snapshot_action], ['Snapshot By', v.snapshot_by], ['Snapshot At', v.snapshot_at]].forEach(function(p) {
+        if (p[1]) html += '<tr><td style="padding:6px 8px;color:#64748b;font-weight:600;width:140px;vertical-align:top;">' + p[0] + '</td><td style="padding:6px 8px;border-bottom:1px solid #f1f5f9;">' + String(p[1]).replace(/</g, '&lt;') + '</td></tr>';
+    });
+    html += '</table></div>';
+    var existing = document.getElementById('termVersionViewModal');
+    if (existing) existing.remove();
+    var modal = document.createElement('div');
+    modal.id = 'termVersionViewModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10002;';
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+}
+
+// Determine whether the current user is allowed to edit a term.
+// Rules: admin always; one of the term's assigned stewards may edit while it is
+// still in draft. The check is on the term's `stewards` list (set when the term
+// was created) — NOT on `created_by` and NOT on the broader domain steward roster.
+function canEditTerm(term) {
+    if (!term) return false;
+    if (currentUser && currentUser.username === 'admin') return true;
+    if (term.status !== 'draft') return false;
+    return isCurrentUserAssignedSteward(term);
+}
+
+// Governance management actions (add/edit/delete domain, stakeholder, role,
+// workflow step) are admin-only. Domain owners and others see read-only views.
+function canManageGovernance() {
+    return !!(currentUser && currentUser.username === 'admin');
+}
+
+// Domain Owners never see the Delete button — even if they're also a steward.
+// Delete is reserved for admin or one of the term's assigned stewards.
+function canDeleteTerm(term) {
+    if (!term) return false;
+    if (currentUser && currentUser.username === 'admin') return true;
+    if (term.status !== 'draft') return false;
+    var roles = getCurrentUserRolesForTerm(term);
+    if (roles.indexOf('domain_owner') !== -1) return false;
+    return isCurrentUserAssignedSteward(term);
+}
+
+function isCurrentUserAssignedSteward(term) {
+    if (!term || !currentUser) return false;
+    var stewards = term.stewards;
+    if (typeof stewards === 'string') { try { stewards = JSON.parse(stewards); } catch (e) { stewards = []; } }
+    if (!Array.isArray(stewards)) return false;
+    var myFullName = ((currentUser.first_name || '') + ' ' + (currentUser.last_name || '')).trim();
+    var myEmail = currentUser.email || '';
+    var myUsername = currentUser.username || '';
+    for (var i = 0; i < stewards.length; i++) {
+        var s = stewards[i];
+        var name = (typeof s === 'string') ? s : (s && (s.name || s.email)) || '';
+        if (name && (name === myFullName || name === myEmail || name === myUsername)) return true;
+    }
+    return false;
 }
 
 function editTerm(index) {
@@ -8394,28 +8661,45 @@ function deleteDomain(index) {
     showGlossaryTab('domains');
 }
 
-function showAddStakeholderModal(editIndex) {
+async function showAddStakeholderModal(editIndex) {
     var modal = document.getElementById('glossaryModal');
     var user = editIndex !== undefined ? governanceData.stakeholders[editIndex] : null;
     var isEdit = !!user;
-    
+
     var roleOptions = governanceData.roles.map(function(r) {
         var selected = user && user.role === r.id ? 'selected' : '';
         return '<option value="' + r.id + '" ' + selected + '>' + r.icon + ' ' + r.name + '</option>';
     }).join('');
-    
+
     var domainCheckboxes = glossaryData.domains.map(function(d) {
         var checked = user && user.domains && user.domains.indexOf(d.name) !== -1 ? 'checked' : '';
         return '<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">' +
             '<input type="checkbox" class="domain-check" value="' + d.name + '" ' + checked + '>' +
             '<span>' + d.icon + ' ' + d.name + '</span></label>';
     }).join('');
-    
+
+    // Load active users so the stakeholder can be picked from them
+    var users = await apiCall('users', 'GET');
+    if (!Array.isArray(users)) users = (users && users.users) ? users.users : [];
+
+    var userOptions = '<option value="">— Seç —</option>' + users.map(function(u) {
+        var fullName = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username;
+        var match = user && (u.email === user.email || fullName === user.name);
+        var selected = match ? 'selected' : '';
+        var label = fullName + (u.email ? ' (' + u.email + ')' : '');
+        return '<option value="' + u.id + '" data-name="' + fullName.replace(/"/g, '&quot;') + '" data-email="' + (u.email || '').replace(/"/g, '&quot;') + '" ' + selected + '>' + label + '</option>';
+    }).join('');
+
     modal.innerHTML = '<div class="modal-content" style="max-width: 500px;">' +
         '<div class="modal-header"><span class="modal-title">' + (isEdit ? '✏️ Stakeholder Redaktə Et' : '➕ Yeni Stakeholder') + '</span><button class="modal-close" onclick="closeGlossaryModal()">×</button></div>' +
         '<div class="modal-body">' +
-            '<div class="form-group"><label>Ad Soyad</label><input type="text" id="stakeholderName" value="' + (user ? user.name : '') + '" placeholder="Məs: Fərid Əliyev"></div>' +
-            '<div class="form-group"><label>E-poçt</label><input type="email" id="stakeholderEmail" value="' + (user ? user.email : '') + '" placeholder="ferid@company.az"></div>' +
+            '<div class="form-group">' +
+                '<label>İstifadəçi</label>' +
+                '<select id="stakeholderUserSelect" onchange="onStakeholderUserChange(this)">' + userOptions + '</select>' +
+                '<div class="form-hint">Stakeholder mövcud user-lərdən seçilir</div>' +
+            '</div>' +
+            '<div class="form-group"><label>Ad Soyad</label><input type="text" id="stakeholderName" value="' + (user ? user.name : '') + '" placeholder="User seçildikdə avtomatik dolur" readonly style="background:#f8fafc;color:#475569;"></div>' +
+            '<div class="form-group"><label>E-poçt</label><input type="email" id="stakeholderEmail" value="' + (user ? user.email : '') + '" placeholder="User seçildikdə avtomatik dolur" readonly style="background:#f8fafc;color:#475569;"></div>' +
             '<div class="form-group"><label>Rol</label><select id="stakeholderRole">' + roleOptions + '</select></div>' +
             '<div class="form-group"><label>Məsul Domenlər</label><div style="display: flex; flex-wrap: wrap; gap: 12px; padding: 12px; background: #f8fafc; border-radius: 8px; max-height: 150px; overflow-y: auto;">' + domainCheckboxes + '</div><div class="form-hint">Bu stakeholder hansı domenlərdən məsuldur</div></div>' +
         '</div>' +
@@ -8427,49 +8711,114 @@ function showAddStakeholderModal(editIndex) {
     modal.style.display = 'flex';
 }
 
+function onStakeholderUserChange(select) {
+    var opt = select.options[select.selectedIndex];
+    var nameField = document.getElementById('stakeholderName');
+    var emailField = document.getElementById('stakeholderEmail');
+    if (nameField) nameField.value = opt && opt.dataset ? (opt.dataset.name || '') : '';
+    if (emailField) emailField.value = opt && opt.dataset ? (opt.dataset.email || '') : '';
+}
+
 function editStakeholder(index) {
     showAddStakeholderModal(index);
 }
 
-function saveStakeholder(editIndex) {
+async function saveStakeholder(editIndex) {
     var name = document.getElementById('stakeholderName').value.trim();
     var email = document.getElementById('stakeholderEmail').value.trim();
     var role = document.getElementById('stakeholderRole').value;
-    
+
     if (!name || !email) { alert('Ad və e-poçt mütləqdir'); return; }
-    
-    var domains = [];
+
+    var selectedDomainNames = [];
     document.querySelectorAll('.domain-check:checked').forEach(function(cb) {
-        domains.push(cb.value);
+        selectedDomainNames.push(cb.value);
     });
-    
-    var initials = name.split(' ').map(function(n) { return n[0]; }).join('').toUpperCase().substring(0, 2);
-    
-    var userData = {
-        id: editIndex !== undefined ? governanceData.stakeholders[editIndex].id : Date.now(),
-        name: name,
-        email: email,
-        role: role,
-        domains: domains,
-        avatar: initials
-    };
-    
-    if (editIndex !== undefined) {
-        governanceData.stakeholders[editIndex] = userData;
-    } else {
-        governanceData.stakeholders.push(userData);
+
+    if (selectedDomainNames.length === 0) {
+        alert('Ən azı bir domen seçin');
+        return;
     }
-    
-    saveGovernanceToStorage();
+
+    // 1) Upsert master record in governance_stakeholders
+    var stakeholderId;
+    if (editIndex !== undefined && governanceData.stakeholders[editIndex] && governanceData.stakeholders[editIndex].id) {
+        stakeholderId = governanceData.stakeholders[editIndex].id;
+        await apiCall('governance_stakeholders', 'PUT', { name: name, email: email, role: role, department: '' }, stakeholderId);
+    } else {
+        var resp = await apiCall('governance_stakeholders', 'POST', { name: name, email: email, role: role, department: '' });
+        stakeholderId = resp && resp.id;
+    }
+
+    // 2) Resolve domain ids
+    var dbDomains = await apiCall('domains', 'GET');
+    if (!Array.isArray(dbDomains)) dbDomains = [];
+    var nameToId = {};
+    dbDomains.forEach(function(d) { nameToId[d.name] = d.id; });
+
+    // 3) On edit, remove this stakeholder's existing domain_stakeholders rows
+    if (editIndex !== undefined) {
+        var prev = governanceData.stakeholders[editIndex];
+        if (prev) {
+            try {
+                var allRows = await apiCall('domain_stakeholders', 'GET');
+                if (Array.isArray(allRows)) {
+                    for (var i = 0; i < allRows.length; i++) {
+                        var r = allRows[i];
+                        if (r.stakeholder_email === prev.email || r.stakeholder_name === prev.name) {
+                            await apiCall('domain_stakeholders', 'DELETE', null, r.id);
+                        }
+                    }
+                }
+            } catch (e) { console.error('cleanup error', e); }
+        }
+    }
+
+    // 4) Create domain_stakeholders rows for each selected domain
+    for (var d = 0; d < selectedDomainNames.length; d++) {
+        var domainId = nameToId[selectedDomainNames[d]];
+        if (!domainId) continue;
+        await apiCall('domain_stakeholders', 'POST', {
+            domain_id: domainId,
+            role_id: role,
+            stakeholder_name: name,
+            stakeholder_email: email
+        });
+    }
+
     closeGlossaryModal();
+    // 5) Refresh both caches from DB
+    if (typeof loadStakeholdersFromDB === 'function') loadStakeholdersFromDB();
+    if (typeof loadDomainsFromDB === 'function') loadDomainsFromDB();
     loadGlossary();
     setTimeout(function() { showGlossaryTab('stakeholders'); }, 100);
 }
 
-function deleteStakeholder(index) {
-    if (!confirm('"' + governanceData.stakeholders[index].name + '" stakeholderini silmək istəyirsiniz?')) return;
-    governanceData.stakeholders.splice(index, 1);
-    saveGovernanceToStorage();
+async function deleteStakeholder(index) {
+    var s = governanceData.stakeholders[index];
+    if (!s) return;
+    if (!confirm('"' + s.name + '" stakeholderini silmək istəyirsiniz?')) return;
+
+    // Remove all domain_stakeholders rows for this person
+    try {
+        var allRows = await apiCall('domain_stakeholders', 'GET');
+        if (Array.isArray(allRows)) {
+            for (var i = 0; i < allRows.length; i++) {
+                var r = allRows[i];
+                if (r.stakeholder_email === s.email || r.stakeholder_name === s.name) {
+                    await apiCall('domain_stakeholders', 'DELETE', null, r.id);
+                }
+            }
+        }
+    } catch (e) { console.error('domain_stakeholders cleanup error', e); }
+
+    // Remove the master governance_stakeholders record
+    if (s.id) {
+        try { await apiCall('governance_stakeholders', 'DELETE', null, s.id); } catch (e) { console.error('governance_stakeholders delete error', e); }
+    }
+
+    if (typeof loadStakeholdersFromDB === 'function') loadStakeholdersFromDB();
+    if (typeof loadDomainsFromDB === 'function') loadDomainsFromDB();
     loadGlossary();
     setTimeout(function() { showGlossaryTab('stakeholders'); }, 100);
 }
@@ -8792,6 +9141,7 @@ async function loadCatalog() {
                             '</div>' +
                         '</div>' +
                         '<div class="table-actions">' +
+                            '<button class="icon-btn" onclick="event.stopPropagation(); showDataPreviewModal(\'' + layer + '\', \'' + table.name + '\')" title="Data Preview (10 sətir)" style="background: #dcfce7; color: #166534;">👁️</button>' +
                             '<button class="icon-btn" onclick="event.stopPropagation(); showDataProfiling(\'' + table.name + '\')" title="' + t('Data Profile') + '" style="background: #dbeafe; color: #3b82f6;">📊</button>' +
                             '<button class="icon-btn" onclick="event.stopPropagation(); showImpactAnalysis(\'' + table.name + '\')" title="' + t('Impact Analysis') + '" style="background: #fecaca; color: #ef4444;">💥</button>' +
                             '<button class="icon-btn" onclick="event.stopPropagation(); copyElementLink(\'/catalog/table/' + layer + '/' + table.name + '\')" title="' + t('Copy link') + '">🔗</button>' +
@@ -17021,6 +17371,7 @@ function loadAdminHub() {
     if (canRoles)    cards.push({ title: 'Roles',          icon: '🔐', desc: 'Rol və icazə idarəetməsi',   fn: 'loadRoleManagement()' });
     if (canAudit)    cards.push({ title: 'Audit Jurnalı',  icon: '📋', desc: 'Sistemdəki dəyişiklik tarixi', fn: 'loadAuditLog()' });
     if (canSettings) cards.push({ title: 'Parametrlər',    icon: '⚙️', desc: 'Sistem konfiqurasiyası',     fn: 'loadSettings()' });
+    cards.push({ title: 'Scanner Status', icon: '📡', desc: 'Scanner-i yoxla / restart et', fn: 'loadScannerStatusPage()' });
 
     var html = '<div style="padding:32px;max-width:1100px;margin:0 auto;">' +
         '<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">' +
@@ -17051,6 +17402,226 @@ function loadAdminHub() {
     html += '</div>';
 
     render('Admin Panel', html);
+}
+
+// ============================================================
+// SCANNER STATUS — admin can check health and restart the scanner container
+// ============================================================
+
+async function loadScannerStatusPage() {
+    setActive('scanner-status');
+    navigateTo('/admin/scanner', true);
+
+    var isAdminUser = currentUser && currentUser.username === 'admin';
+
+    var html =
+        '<div style="padding:24px;max-width:760px;margin:0 auto;">' +
+            '<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">' +
+                '<span style="font-size:30px;">📡</span>' +
+                '<h1 style="margin:0;font-size:22px;color:#1e293b;">Scanner Status</h1>' +
+            '</div>' +
+            '<div id="scannerStatusCard" style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">' +
+                '<div style="color:#64748b;">⏳ Yoxlanılır...</div>' +
+            '</div>' +
+            (isAdminUser
+                ? '<div style="margin-top:20px;">' +
+                    '<button id="restartScannerBtn" onclick="restartScannerAction()" style="padding:12px 22px;background:#3b82f6;color:white;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">🔄 Scanner-i restart et</button>' +
+                  '</div>'
+                : '<div style="margin-top:20px;color:#64748b;font-size:13px;">Restart yalnız <code>admin</code> üçündür.</div>'
+            ) +
+            '<div id="scannerActionResult" style="margin-top:14px;"></div>' +
+        '</div>';
+
+    render('Scanner Status', html);
+    refreshScannerStatusCard();
+}
+
+async function refreshScannerStatusCard() {
+    var card = document.getElementById('scannerStatusCard');
+    if (!card) return;
+    try {
+        var response = await fetch(API + '?action=scanner_status', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        var result = await response.json();
+        var data = result.data || {};
+        if (data.up) {
+            var svc = data.service || {};
+            card.innerHTML =
+                '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+                    '<div style="width:14px;height:14px;border-radius:50%;background:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,0.18);"></div>' +
+                    '<span style="font-size:16px;font-weight:600;color:#065f46;">Scanner aktivdir</span>' +
+                '</div>' +
+                '<div style="font-size:13px;color:#475569;line-height:1.7;">' +
+                    'Service: <strong>' + (svc.service || 'DataRover Scanner') + '</strong><br>' +
+                    'Versiya: <strong>' + (svc.version || '?') + '</strong><br>' +
+                    'URL: <code>' + (data.url || '') + '</code><br>' +
+                    'Dəstəklənir: ' + ((svc.supported_databases || []).join(', ') || '-') +
+                '</div>';
+        } else {
+            card.innerHTML =
+                '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">' +
+                    '<div style="width:14px;height:14px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 4px rgba(239,68,68,0.18);"></div>' +
+                    '<span style="font-size:16px;font-weight:600;color:#991b1b;">Scanner əlçatmazdır</span>' +
+                '</div>' +
+                '<div style="font-size:13px;color:#475569;">URL: <code>' + (data.url || '') + '</code></div>' +
+                '<div style="font-size:12px;color:#94a3b8;margin-top:6px;">' + (data.message || '') + '</div>';
+        }
+    } catch (e) {
+        card.innerHTML = '<div style="color:#991b1b;">Status yoxlanmadı: ' + (e.message || e) + '</div>';
+    }
+}
+
+async function restartScannerAction() {
+    var btn = document.getElementById('restartScannerBtn');
+    var resultEl = document.getElementById('scannerActionResult');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Restart edilir...'; }
+    if (resultEl) resultEl.innerHTML = '';
+    try {
+        var response = await fetch(API + '?action=scanner_restart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken }
+        });
+        var result = await response.json();
+        if (!result.success) {
+            resultEl.innerHTML = '<div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;">⚠️ ' + (result.error || 'Restart uğursuz') + '</div>';
+        } else {
+            resultEl.innerHTML = '<div style="padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;color:#166534;">✅ Restart sorğusu göndərildi. Output: <code>' + (result.data.output || '') + '</code></div>';
+        }
+    } catch (e) {
+        resultEl.innerHTML = '<div style="padding:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;">⚠️ ' + e.message + '</div>';
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Scanner-i restart et'; }
+        // Re-poll status after a short delay
+        setTimeout(refreshScannerStatusCard, 4000);
+    }
+}
+
+// ============================================================
+// SQL CONSOLE — hidden, admin-only direct DML/DDL/SELECT
+// Reachable only via #/sql
+// ============================================================
+
+function loadSqlConsole() {
+    setActive('sql');
+    navigateTo('/sql', true);
+
+    if (!currentUser || currentUser.username !== 'admin') {
+        render('SQL Console', '<div style="padding:32px;max-width:600px;margin:40px auto;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:#991b1b;">⚠️ Yalnız <code>admin</code> istifadəçisi üçün.</div>');
+        return;
+    }
+
+    var sample =
+        '-- Bu konsoldan bütün DML/DDL/SELECT işlədə bilərsən.\n' +
+        '-- DİQQƏT: hər sorğu birbaşa MySQL üzərində işləyir, geri qaytarma yoxdur.\n' +
+        '-- Çoxsətirli SQL üçün hər ifadəni semicolon ilə bitir; klikdə hər biri ayrıca işləyir.\n' +
+        '\n' +
+        'SHOW TABLES;';
+
+    var html =
+        '<div style="padding:24px;max-width:1200px;margin:0 auto;">' +
+            '<div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">' +
+                '<span style="font-size:28px;">🛠️</span>' +
+                '<h1 style="margin:0;font-size:24px;color:#1e293b;">SQL Console</h1>' +
+                '<span style="background:#fee2e2;color:#991b1b;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px;">ADMIN-ONLY</span>' +
+            '</div>' +
+            '<p style="color:#64748b;font-size:13px;margin:0 0 20px;">Birbaşa DataRover MySQL DB-də yazır. Audit log-a düşür.</p>' +
+
+            '<div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-bottom:16px;">' +
+                '<textarea id="sqlInput" placeholder="SQL yaz..." spellcheck="false" ' +
+                    'style="width:100%;min-height:160px;padding:14px;border:1px solid #e5e7eb;border-radius:8px;font-family:Consolas,Monaco,monospace;font-size:13px;line-height:1.5;background:#0f172a;color:#e2e8f0;resize:vertical;box-sizing:border-box;">' + sample + '</textarea>' +
+
+                '<div style="display:flex;gap:10px;margin-top:12px;align-items:center;">' +
+                    '<button id="sqlRunBtn" onclick="runSqlConsole()" style="padding:10px 20px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">▶ Run (Ctrl+Enter)</button>' +
+                    '<button onclick="document.getElementById(\'sqlInput\').value=\'\'" style="padding:10px 16px;background:white;color:#64748b;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;font-size:14px;">Təmizlə</button>' +
+                    '<span id="sqlMeta" style="margin-left:auto;color:#64748b;font-size:12px;"></span>' +
+                '</div>' +
+            '</div>' +
+
+            '<div id="sqlResult"></div>' +
+        '</div>';
+
+    render('SQL Console', html);
+
+    var input = document.getElementById('sqlInput');
+    if (input) {
+        input.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runSqlConsole(); }
+        });
+        input.focus();
+    }
+}
+
+async function runSqlConsole() {
+    var input = document.getElementById('sqlInput');
+    var resultEl = document.getElementById('sqlResult');
+    var metaEl = document.getElementById('sqlMeta');
+    var btn = document.getElementById('sqlRunBtn');
+    if (!input || !resultEl) return;
+
+    var sql = (input.value || '').trim();
+    if (!sql) { resultEl.innerHTML = ''; return; }
+
+    if (/^(drop|truncate|delete|alter)\b/i.test(sql)) {
+        if (!confirm('Bu sorğu məlumatı dəyişdirə/silə bilər. Davam edək?\n\n' + sql.substring(0, 200))) return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Running...'; }
+    resultEl.innerHTML = '<div style="padding:16px;color:#64748b;">İcra olunur...</div>';
+    metaEl.textContent = '';
+
+    try {
+        var response = await fetch(API + '?action=sql_console', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+            body: JSON.stringify({ sql: sql })
+        });
+        var result = await response.json();
+
+        if (!result.success) {
+            resultEl.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:#991b1b;font-family:Consolas,monospace;font-size:13px;white-space:pre-wrap;">❌ ' + (result.error || 'Xəta') + '</div>';
+            metaEl.textContent = '';
+            return;
+        }
+
+        var d = result.data || {};
+        if (d.kind === 'rows') {
+            metaEl.textContent = d.row_count + ' sətir · ' + d.elapsed_ms + ' ms';
+            if (d.row_count === 0) {
+                resultEl.innerHTML = '<div style="padding:16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;color:#0369a1;">Sıfır sətir.</div>';
+                return;
+            }
+            var cols = d.columns || [];
+            var html =
+                '<div style="background:white;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">' +
+                    '<div style="overflow:auto;max-height:60vh;">' +
+                        '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+                            '<thead style="background:#f8fafc;position:sticky;top:0;z-index:1;"><tr>';
+            cols.forEach(function(c) {
+                html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e5e7eb;font-weight:600;color:#475569;white-space:nowrap;">' + c + '</th>';
+            });
+            html += '</tr></thead><tbody>';
+            d.rows.forEach(function(r, idx) {
+                html += '<tr style="background:' + (idx % 2 ? '#fafbfc' : 'white') + ';border-bottom:1px solid #f1f5f9;">';
+                cols.forEach(function(c) {
+                    var v = r[c];
+                    var display = v === null ? '<span style="color:#cbd5e1;font-style:italic;">NULL</span>' : String(v);
+                    if (display.length > 200) display = display.substring(0, 197) + '...';
+                    html += '<td style="padding:8px 12px;white-space:nowrap;max-width:400px;overflow:hidden;text-overflow:ellipsis;font-family:Consolas,monospace;">' + display + '</td>';
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table></div></div>';
+            resultEl.innerHTML = html;
+        } else {
+            metaEl.textContent = d.elapsed_ms + ' ms';
+            resultEl.innerHTML = '<div style="padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;color:#166534;font-weight:500;">✅ Uğurla icra olundu — ' + (d.affected_rows || 0) + ' sətir təsirləndi.</div>';
+        }
+    } catch (e) {
+        resultEl.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:#991b1b;">⚠️ Şəbəkə xətası: ' + e.message + '</div>';
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '▶ Run (Ctrl+Enter)'; }
+    }
 }
 
 // ============================================================
@@ -17745,6 +18316,12 @@ function initApp() {
     // Render main app with sidebar
     renderMainApp();
     loadDashboard();
+
+    // Pending approvals badge — refresh now and every 60s
+    setTimeout(refreshPendingApprovalsBadge, 500);
+    if (!window._approvalsBadgeInterval) {
+        window._approvalsBadgeInterval = setInterval(refreshPendingApprovalsBadge, 60000);
+    }
 }
 
 function renderMainApp() {
@@ -17790,28 +18367,7 @@ function renderMainApp() {
     // Reporting Catalog
     menuHtml += '<div class="menu-item" data-page="reports" onclick="loadReports()">' + icons.reports + ' ' + t('Reporting Catalog') + '</div>';
     
-    // Data Quality
-    if (hasAnyPermission('quality')) {
-        menuHtml += '<div class="menu-item" data-page="quality" onclick="loadQuality()">' + icons.quality + ' ' + t('Data Quality') + '</div>';
-    }
-    
-    // Data Lineage
-    if (hasAnyPermission('lineage')) {
-        menuHtml += '<div class="menu-item" data-page="lineage" onclick="loadLineage()">' + icons.lineage + ' ' + t('Data Lineage') + '</div>';
-    }
-    
-    // Column Mapper
-    if (hasAnyPermission('mapper')) {
-        menuHtml += '<div class="menu-item" data-page="mapper" onclick="loadColumnMapper()">' + icons.mapper + ' ' + t('Column Mapper') + '</div>';
-    }
-    
-    // Governance
-    if (hasAnyPermission('governance')) {
-        menuHtml += '<div class="menu-item" data-page="governance" onclick="loadGovernance()">' + icons.governance + ' ' + t('Governance') + '</div>';
-    }
-    
-    // AI Assistant
-    menuHtml += '<div class="menu-item" data-page="ai" onclick="loadAIAssistant()">' + icons.ai + ' ' + t('AI Assistant') + '</div>';
+    // Data Quality / Lineage / Column Mapper / Governance / AI Assistant — hidden per user request
     
     // Admin section — hidden per user request
     
@@ -17864,13 +18420,17 @@ function renderMainApp() {
                     </button>
                 </div>
                 ${currentUser ? `
+                <div id="approvalsBell" style="position:relative;cursor:pointer;padding:10px;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;transition:all 0.2s;" onclick="togglePendingApprovalsDropdown(event)" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'" title="Təsdiq gözləyənlər">
+                    <span style="font-size:18px;">🔔</span>
+                    <span id="approvalsBadge" style="display:none;position:absolute;top:2px;right:2px;background:#ef4444;color:white;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;padding:0 5px;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(239,68,68,0.5);"></span>
+                    <div id="approvalsDropdown" style="display:none;position:absolute;top:100%;right:0;margin-top:8px;width:380px;max-height:500px;background:white;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.15);overflow:hidden;z-index:9999;"></div>
+                </div>
                 <div style="display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#f8fafc'">
                     <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 15px; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);">
                         ${userName.charAt(0).toUpperCase()}
                     </div>
-                    <div style="display: flex; flex-direction: column; line-height: 1.4; min-width: 120px;">
+                    <div style="display: flex; align-items: center; line-height: 1.4; min-width: 120px;">
                         <span style="color: #1e293b; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${userName}</span>
-                        <span style="color: #64748b; font-size: 12px; font-weight: 500;">${roleName}</span>
                     </div>
                     <button onclick="logout(); event.stopPropagation();" style="background: transparent; border: none; color: #64748b; cursor: pointer; padding: 6px; display: flex; align-items: center; transition: color 0.2s; margin-left: 4px;" title="${t('Logout')}" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='#64748b'">
                         <svg viewBox="0 0 20 20" fill="currentColor" style="width: 20px; height: 20px;"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
@@ -17990,7 +18550,14 @@ function handleRoute() {
             loadAIAssistant();
             break;
         case 'admin':
-            loadAdminHub();
+            if (route.action === 'scanner') {
+                loadScannerStatusPage();
+            } else {
+                loadAdminHub();
+            }
+            break;
+        case 'sql':
+            loadSqlConsole();
             break;
         case 'users':
             loadUserManagement();
@@ -18169,6 +18736,16 @@ async function loadTermDetail(termId) {
     // Parse all JSON fields
     var stewards = term.stewards || [];
     if (typeof stewards === 'string') { try { stewards = JSON.parse(stewards); } catch(e) { stewards = []; } }
+    // Deduplicate stewards by name (the saved JSON sometimes contains duplicates)
+    if (Array.isArray(stewards)) {
+        var seen = {};
+        stewards = stewards.filter(function(s) {
+            var n = typeof s === 'string' ? s : (s && s.name);
+            if (!n || seen[n]) return false;
+            seen[n] = 1;
+            return true;
+        });
+    }
     
     var qualityRules = term.qualityRules || [];
     if (typeof qualityRules === 'string') { try { qualityRules = JSON.parse(qualityRules); } catch(e) { qualityRules = []; } }
@@ -18274,7 +18851,8 @@ async function loadTermDetail(termId) {
             '</div>' +
             '<div class="td-actions">' +
                 '<button class="td-btn" onclick="copyElementLink(\'/glossary/term/' + termId + '\')">' + svgIcon('link', 14) + ' Link</button>' +
-                '<button class="td-btn" onclick="editTerm(' + termIdx + ')">' + svgIcon('edit', 14) + ' Redaktə</button>' +
+                (canEditTerm(term) ? '<button class="td-btn" onclick="editTerm(' + termIdx + ')">' + svgIcon('edit', 14) + ' Redaktə</button>' : '') +
+                (canReopenTerm(term) ? '<button class="td-btn" onclick="reopenTerm(' + (term.id || termId) + ')" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">' + svgIcon('refresh', 14) + ' Yenidən aç</button>' : '') +
             '</div>' +
         '</div>' +
     '</div>';
@@ -18670,12 +19248,12 @@ async function loadTermDetail(termId) {
         }
         
         // Action buttons for current step
-        if (isActive && currentStep && (currentStep.nextStep || currentStep.rejectStep)) {
+        if (isActive && currentStep && (currentStep.nextStep || currentStep.rejectStep) && canActOnStep(term, currentStep)) {
             html += '<div style="display:flex;gap:10px;margin-top:12px;padding-top:12px;border-top:1px dashed #e5e7eb;">';
             if (currentStep.nextStep) {
                 var nextStep = governanceData.workflowSteps.find(function(s) { return s.id === currentStep.nextStep; });
                 if (nextStep) {
-                    html += '<button onclick="approveTermAction(' + termIdx + ')" style="display:flex;align-items:center;gap:6px;padding:10px 20px;background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.4);transition:all 0.2s;">' + 
+                    html += '<button onclick="approveTermAction(' + termIdx + ')" style="display:flex;align-items:center;gap:6px;padding:10px 20px;background:linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.4);transition:all 0.2s;">' +
                         '<span style="font-size:16px;">' + nextStep.icon + '</span> ' + nextStep.name + ' et' +
                     '</button>';
                 }
@@ -18792,10 +19370,46 @@ async function loadTermDetail(termId) {
     
     // ==================== TAB 6: TARİXÇƏ ====================
     html += '<div id="td-history" class="td-content">';
-    
+
+    // Lazy-load version snapshots into the history tab
+    setTimeout(function() {
+        try {
+            var holder = document.getElementById('termVersionsHolder-' + term.id);
+            if (!holder) return;
+            fetch(API + '?action=glossary_term_versions&term_id=' + encodeURIComponent(term.id), {
+                headers: { 'Authorization': 'Bearer ' + (typeof authToken !== 'undefined' ? authToken : '') }
+            }).then(function(r) { return r.json(); }).then(function(result) {
+                if (!result || !result.success) { holder.innerHTML = ''; return; }
+                var versions = result.data || [];
+                if (!versions.length) { holder.innerHTML = ''; return; }
+                var actionStyles = {
+                    published:  { bg:'#dcfce7', color:'#166534', icon:'🚀', label:'Publish edildi' },
+                    reopened:   { bg:'#fef3c7', color:'#92400e', icon:'🔄', label:'Yenidən açıldı' },
+                    deprecated: { bg:'#f3f4f6', color:'#374151', icon:'⛔', label:'Deprecated' }
+                };
+                var html = '<div class="td-card"><div class="td-card-title"><span>📚</span> Versiyalar (' + versions.length + ')</div>';
+                versions.forEach(function(v) {
+                    var st = actionStyles[v.snapshot_action] || { bg:'#e0e7ff', color:'#4338ca', icon:'📌', label:v.snapshot_action || 'snapshot' };
+                    html += '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">' +
+                        '<div style="background:' + st.bg + ';color:' + st.color + ';width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">' + st.icon + '</div>' +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-weight:600;font-size:13px;color:#1e293b;">v' + v.version_number + ' · ' + st.label + '</div>' +
+                            '<div style="color:#64748b;font-size:11px;margin-top:2px;">👤 ' + (v.snapshot_by || 'system') + '   📅 ' + (v.snapshot_at || '').substring(0, 19) + '</div>' +
+                        '</div>' +
+                        '<button onclick="viewTermVersion(' + v.id + ')" style="padding:6px 12px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;flex-shrink:0;">👁️ Bax</button>' +
+                    '</div>';
+                });
+                html += '</div>';
+                holder.innerHTML = html;
+            }).catch(function() { holder.innerHTML = ''; });
+        } catch (e) {}
+    }, 50);
+
+    html += '<div id="termVersionsHolder-' + term.id + '"></div>';
+
     // Build comprehensive history from all available data
     var allHistory = [];
-    
+
     // Add creation event
     if (term.createdAt) {
         allHistory.push({
@@ -18808,13 +19422,19 @@ async function loadTermDetail(termId) {
         });
     }
 
-    // Add change history items
+    // Add change history items, but skip duplicates of the creation event
+    // (term.history sometimes also has a "Yaradıldı" entry which would render twice).
     if (changeHistory.length > 0) {
         changeHistory.forEach(function(c) {
+            var actionLabel = c.action || c.type || 'Dəyişiklik';
+            if (/^Yarad[ıi]ld[ıi]$|^Termin yarad[ıi]ld[ıi]$/i.test(actionLabel)) return;
+            // The approver/rejector typed comment is stored in `c.comment` — fall through
+            // to it (and `details`) so the message they wrote actually shows up here.
+            var desc = c.description || c.details || c.comment || '';
             allHistory.push({
                 date: c.date,
-                action: c.action || c.type || 'Dəyişiklik',
-                description: c.description || c.details || '',
+                action: actionLabel,
+                description: desc,
                 user: c.user || 'Naməlum',
                 type: 'change',
                 color: '#3b82f6'
@@ -18862,18 +19482,9 @@ async function loadTermDetail(termId) {
         });
     }
 
-    // Add last update
-    if (term.updatedAt && term.updatedAt !== term.createdAt) {
-        allHistory.push({
-            date: term.updatedAt,
-            action: 'Son yenilənmə',
-            description: 'Termin məlumatları yeniləndi',
-            user: term.updatedBy || 'Naməlum',
-            type: 'update',
-            color: '#1d4ed8'
-        });
-    }
-    
+    // (Removed "Son yenilənmə" — the actual edit/status events already convey this and
+    // the row was always showing "Naməlum" because `updatedBy` is not stored on the term.)
+
     // Sort by date descending
     allHistory.sort(function(a, b) {
         return new Date(b.date || 0) - new Date(a.date || 0);
@@ -19156,6 +19767,40 @@ function removePhysicalAttributeFromTerm(termIdx, attrIdx) {
     }
 }
 
+// Determine which workflow roles the current user holds in this term's domain.
+// Returns an array of role IDs (e.g. ['domain_owner', 'data_steward']).
+function getCurrentUserRolesForTerm(term) {
+    if (!currentUser || !term) return [];
+    if (currentUser.username === 'admin') return ['*']; // sentinel — admin matches anything
+    var roles = [];
+    var myFullName = ((currentUser.first_name || '') + ' ' + (currentUser.last_name || '')).trim();
+    var domain = glossaryData.domains.find(function(d) { return d.name === term.domain; });
+    if (!domain || !domain.stakeholders) return [];
+    Object.keys(domain.stakeholders).forEach(function(roleKey) {
+        // roleKey is e.g. "domain_owners" → strip trailing "s" → "domain_owner"
+        var roleId = roleKey.replace(/s$/, '');
+        var list = domain.stakeholders[roleKey] || [];
+        if (list.indexOf(myFullName) !== -1) roles.push(roleId);
+    });
+    return roles;
+}
+
+// True if the user is allowed to advance/reject the term at this step.
+// `approved_by` on a step lists the roles that can move the term OUT of that step.
+// For example draft.approved_by = ['data_steward'] means a steward submits draft → review.
+function canActOnStep(term, step) {
+    if (!step) return false;
+    if (currentUser && currentUser.username === 'admin') return true;
+    var approvers = step.approvedBy || [];
+    if (!approvers || approvers.length === 0) return false;
+    var myRoles = getCurrentUserRolesForTerm(term);
+    if (myRoles.indexOf('*') !== -1) return true;
+    for (var i = 0; i < approvers.length; i++) {
+        if (myRoles.indexOf(approvers[i]) !== -1) return true;
+    }
+    return false;
+}
+
 function approveTermAction(index) {
     advanceTermStatus(index);
 }
@@ -19250,6 +19895,233 @@ function saveLinkQualityRules(termIdx) {
 }
 
 
+// ============================================================
+// PENDING APPROVALS bell — for domain owners
+// ============================================================
+
+async function refreshPendingApprovalsBadge() {
+    var badge = document.getElementById('approvalsBadge');
+    if (!badge || !currentUser) return;
+    try {
+        var response = await fetch(API + '?action=glossary_pending_for_me', {
+            headers: { 'Authorization': 'Bearer ' + authToken }
+        });
+        var result = await response.json();
+        var count = (result.success && result.data) ? result.data.count : 0;
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+        window._pendingApprovals = (result.success && result.data) ? result.data : { terms: [], count: 0, my_domains: [] };
+    } catch (e) { /* silent */ }
+}
+
+async function togglePendingApprovalsDropdown(e) {
+    if (e) e.stopPropagation();
+    var dropdown = document.getElementById('approvalsDropdown');
+    if (!dropdown) return;
+    if (dropdown.style.display === 'block') { dropdown.style.display = 'none'; return; }
+
+    dropdown.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;font-size:13px;">⏳ Yüklənir...</div>';
+    dropdown.style.display = 'block';
+
+    var data = window._pendingApprovals;
+    if (!data) {
+        await refreshPendingApprovalsBadge();
+        data = window._pendingApprovals || { terms: [], count: 0, my_domains: [] };
+    }
+
+    if (!data.my_domains || data.my_domains.length === 0) {
+        dropdown.innerHTML =
+            '<div style="padding:16px 18px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#1e293b;">Təsdiqlər</div>' +
+            '<div style="padding:24px;text-align:center;color:#64748b;font-size:13px;">' +
+                '🔍 Sən heç bir domain-in <strong>owner</strong>-i deyilsən.' +
+            '</div>';
+        return;
+    }
+
+    if (data.terms.length === 0) {
+        dropdown.innerHTML =
+            '<div style="padding:16px 18px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#1e293b;">Təsdiqlər</div>' +
+            '<div style="padding:24px;text-align:center;color:#64748b;font-size:13px;">' +
+                '✅ Təsdiq gözləyən termin yoxdur.<br><br>' +
+                '<span style="font-size:11px;">Domain-lərin: ' + data.my_domains.join(', ') + '</span>' +
+            '</div>';
+        return;
+    }
+
+    var html =
+        '<div style="padding:14px 18px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+            '<span style="font-weight:600;color:#1e293b;">Təsdiq gözləyənlər (' + data.count + ')</span>' +
+            '<button onclick="markAllNotificationsRead(event)" style="background:none;border:none;color:#3b82f6;font-size:11px;font-weight:600;cursor:pointer;padding:4px 8px;border-radius:4px;" onmouseover="this.style.background=\'#eff6ff\'" onmouseout="this.style.background=\'none\'">✓ Hamısını oxudum</button>' +
+        '</div>' +
+        '<div style="max-height:420px;overflow-y:auto;">';
+
+    data.terms.forEach(function(t) {
+        var defShort = (t.definition || '').substring(0, 80);
+        if ((t.definition || '').length > 80) defShort += '...';
+        html += '<div onclick="openApprovalTerm(' + t.id + ')" style="padding:14px 18px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'white\'">' +
+            '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:4px;">' +
+                '<span style="font-weight:600;color:#1e293b;font-size:14px;flex:1;">' + (t.name || '-') + '</span>' +
+                '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap;">' + (t.status || '').toUpperCase() + '</span>' +
+            '</div>' +
+            (defShort ? '<div style="color:#64748b;font-size:12px;line-height:1.4;margin-bottom:4px;">' + defShort + '</div>' : '') +
+            '<div style="color:#94a3b8;font-size:11px;">📁 ' + (t.domain || '-') + ' · ' + (t.updated_at || t.created_at || '').substring(0, 16) + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+    dropdown.innerHTML = html;
+}
+
+function openApprovalTerm(termId) {
+    var dropdown = document.getElementById('approvalsDropdown');
+    if (dropdown) dropdown.style.display = 'none';
+    navigateTo('/glossary/term/' + termId);
+}
+
+async function markAllNotificationsRead(e) {
+    if (e) e.stopPropagation();
+    try {
+        await fetch(API + '?action=glossary_pending_mark_all_read', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken }
+        });
+        var dropdown = document.getElementById('approvalsDropdown');
+        if (dropdown) dropdown.style.display = 'none';
+        window._pendingApprovals = null;
+        await refreshPendingApprovalsBadge();
+    } catch (err) {
+        console.error('mark all read error:', err);
+    }
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', function(e) {
+    var bell = document.getElementById('approvalsBell');
+    var dropdown = document.getElementById('approvalsDropdown');
+    if (!bell || !dropdown) return;
+    if (!bell.contains(e.target)) dropdown.style.display = 'none';
+});
+
+async function showDataPreviewModal(layerName, tableName) {
+    var existing = document.getElementById('dataPreviewModal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div');
+    modal.id = 'dataPreviewModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10001;';
+    modal.innerHTML =
+        '<div style="background:white;border-radius:12px;width:1100px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+            '<div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">' +
+                '<h3 style="margin:0;font-size:16px;display:flex;align-items:center;gap:10px;">👁️ Data Preview <span style="background:#f1f5f9;padding:3px 10px;border-radius:6px;font-size:13px;font-weight:500;">' + tableName + '</span></h3>' +
+                '<button onclick="document.getElementById(\'dataPreviewModal\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;">&times;</button>' +
+            '</div>' +
+            '<div id="dataPreviewModalBody" style="padding:16px 20px;overflow:auto;flex:1;">' +
+                '<div style="padding:30px;text-align:center;color:#64748b;">⏳ Verilənlər bazasından oxunur...</div>' +
+            '</div>' +
+        '</div>';
+    document.body.appendChild(modal);
+
+    try {
+        var response = await fetch(API + '?action=table_preview&table=' + encodeURIComponent(tableName) + '&layer=' + encodeURIComponent(layerName));
+        var result = await response.json();
+        var body = document.getElementById('dataPreviewModalBody');
+        if (!body) return;
+
+        if (!result.success) {
+            body.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:13px;">⚠️ ' + (result.error || 'Preview xətası') + '</div>';
+            return;
+        }
+        var rows = (result.data && result.data.rows) || [];
+        if (rows.length === 0) {
+            body.innerHTML = '<div style="padding:30px;text-align:center;color:#64748b;">Cədvəl boşdur.</div>';
+            return;
+        }
+
+        var cols = Object.keys(rows[0]);
+        var html = '<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">' +
+            '<div style="overflow:auto;max-height:65vh;">' +
+                '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+                    '<thead style="background:#f8fafc;position:sticky;top:0;z-index:1;"><tr>';
+        cols.forEach(function(c) {
+            html += '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid #e5e7eb;font-weight:600;color:#475569;white-space:nowrap;">' + c + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+        rows.forEach(function(r, idx) {
+            html += '<tr style="background:' + (idx % 2 ? '#fafbfc' : 'white') + ';border-bottom:1px solid #f1f5f9;">';
+            cols.forEach(function(c) {
+                var v = r[c];
+                var display = v === null ? '<span style="color:#cbd5e1;font-style:italic;">NULL</span>' : String(v);
+                if (display.length > 150) display = display.substring(0, 147) + '...';
+                html += '<td style="padding:8px 12px;white-space:nowrap;max-width:300px;overflow:hidden;text-overflow:ellipsis;font-family:Consolas,monospace;">' + display + '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+        html += '<div style="margin-top:8px;font-size:11px;color:#94a3b8;">Göstərilir: ' + rows.length + ' sətir</div>';
+        body.innerHTML = html;
+    } catch (e) {
+        var body = document.getElementById('dataPreviewModalBody');
+        if (body) body.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;">⚠️ Şəbəkə xətası: ' + e.message + '</div>';
+    }
+}
+
+async function loadDataPreview(tableName, layerName) {
+    var btn = document.getElementById('dataPreviewBtn');
+    var container = document.getElementById('dataPreviewContainer');
+    if (!container) return;
+
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Yüklənir...'; }
+    container.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">Verilənlər bazasından oxunur...</div>';
+
+    try {
+        var response = await fetch(API + '?action=table_preview&table=' + encodeURIComponent(tableName) + '&layer=' + encodeURIComponent(layerName));
+        var result = await response.json();
+
+        if (!result.success) {
+            container.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:13px;">⚠️ ' + (result.error || 'Preview xətası') + '</div>';
+            if (btn) { btn.disabled = false; btn.textContent = '🔄 Təkrar cəhd et'; }
+            return;
+        }
+
+        var rows = (result.data && result.data.rows) || [];
+        if (rows.length === 0) {
+            container.innerHTML = '<div style="padding:20px;text-align:center;color:#64748b;">Cədvəl boşdur.</div>';
+            if (btn) { btn.disabled = false; btn.textContent = '🔄 Yenilə'; }
+            return;
+        }
+
+        var cols = Object.keys(rows[0]);
+        var html = '<div style="overflow-x:auto;border:1px solid #e5e7eb;border-radius:8px;">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+                '<thead style="background:#f8fafc;"><tr>';
+        cols.forEach(function(c) {
+            html += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e5e7eb;font-weight:600;color:#475569;white-space:nowrap;">' + c + '</th>';
+        });
+        html += '</tr></thead><tbody>';
+        rows.forEach(function(r, idx) {
+            html += '<tr style="background:' + (idx % 2 ? '#fafbfc' : 'white') + ';border-bottom:1px solid #f1f5f9;">';
+            cols.forEach(function(c) {
+                var v = r[c];
+                var display = v === null ? '<span style="color:#cbd5e1;font-style:italic;">NULL</span>' : String(v);
+                if (display.length > 100) display = display.substring(0, 97) + '...';
+                html += '<td style="padding:8px 10px;white-space:nowrap;max-width:300px;overflow:hidden;text-overflow:ellipsis;">' + display + '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+        html += '<div style="margin-top:8px;font-size:11px;color:#94a3b8;">Göstərilir: ' + rows.length + ' sətir</div>';
+        container.innerHTML = html;
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Yenilə'; }
+    } catch (e) {
+        console.error('Preview error:', e);
+        container.innerHTML = '<div style="padding:16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:13px;">⚠️ Şəbəkə xətası: ' + e.message + '</div>';
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 Təkrar cəhd et'; }
+    }
+}
+
 function loadTableDetail(layerName, tableName) {
     loadCatalogFromStorage();
     loadMappingsFromStorage();
@@ -19317,7 +20189,18 @@ function loadTableDetail(layerName, tableName) {
         '</div>' +
         (table.description ? '<div style="margin-top: 16px;"><div class="detail-label">Təsvir</div><div class="detail-description">' + table.description + '</div></div>' : '') +
     '</div>';
-    
+
+    // Data Preview card (lazy-loaded — only fetches when button clicked)
+    var safeName = tableName.replace(/'/g, "\\'");
+    var safeLayer = layerName.replace(/'/g, "\\'");
+    html += '<div class="detail-card">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<div class="detail-card-title">👁️ Data Preview</div>' +
+            '<button id="dataPreviewBtn" onclick="loadDataPreview(\'' + safeName + '\', \'' + safeLayer + '\')" style="padding:8px 16px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">📊 İlk 10 sətri göstər</button>' +
+        '</div>' +
+        '<div id="dataPreviewContainer" style="margin-top:16px;"></div>' +
+    '</div>';
+
     // Columns card with linked checks
     html += '<div class="detail-card">' +
         '<div class="detail-card-title">📊 Sütunlar (' + (table.columns ? table.columns.length : 0) + ')</div>';
@@ -19853,6 +20736,39 @@ function loadDomainDetail(domainName) {
             '<div class="dd-stat-sub">qaralama</div>' +
         '</div>' +
     '</div>';
+
+    // ===== STAKEHOLDERS =====
+    var stk = (domain.stakeholders || {});
+    var stkGroups = [
+        { key: 'domain_owners',    label: 'Domain Owner',    icon: '👑', color: '#f59e0b' },
+        { key: 'data_stewards',    label: 'Data Steward',    icon: '🛡️', color: '#3b82f6' },
+        { key: 'data_custodians',  label: 'Data Custodian',  icon: '🔐', color: '#8b5cf6' },
+        { key: 'data_architects',  label: 'Data Architect',  icon: '📐', color: '#10b981' }
+    ];
+    var stkAny = stkGroups.some(function(g) { return (stk[g.key] || []).length > 0; });
+    if (stkAny) {
+        html += '<div class="dd-card" style="margin-bottom:20px;">' +
+            '<div class="dd-card-header">' +
+                '<div class="dd-card-title">' + svgIcon('users', 14) + ' Stakeholderlər</div>' +
+            '</div>' +
+            '<div style="padding:14px 18px;display:flex;flex-direction:column;gap:14px;">';
+        stkGroups.forEach(function(g) {
+            var people = stk[g.key] || [];
+            if (!people.length) return;
+            html += '<div>' +
+                '<div style="font-size:11px;font-weight:700;color:' + g.color + ';margin-bottom:8px;letter-spacing:0.3px;">' + g.icon + ' ' + g.label.toUpperCase() + ' (' + people.length + ')</div>' +
+                '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+            people.forEach(function(name) {
+                var initials = name.split(' ').map(function(p) { return p[0]; }).join('').substring(0, 2).toUpperCase();
+                html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;background:white;border:1px solid #e5e7eb;border-radius:999px;font-size:12px;">' +
+                    '<div style="width:26px;height:26px;border-radius:50%;background:' + g.color + ';color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">' + initials + '</div>' +
+                    '<span style="color:#1e293b;">' + name + '</span>' +
+                '</div>';
+            });
+            html += '</div></div>';
+        });
+        html += '</div></div>';
+    }
 
     // ===== TERMS LIST =====
     html += '<div class="dd-card">' +
@@ -21259,21 +22175,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 // EXTERNAL SOURCES MODULE
 // ============================================================
 
-const SCANNER_API = 'http://localhost:8000';
-
-// Scanner API call helper
+// Scanner API helper. Goes through backend.php's `scanner_proxy` action so the
+// scanner does NOT have to be reachable from the user's browser — the browser
+// only ever talks to the same origin that served the page, and the PHP backend
+// (running on the Docker network) forwards to `http://scanner:8000`.
 async function scannerCall(endpoint, method = 'GET', data = null) {
+    const url = API + '?action=scanner_proxy&endpoint=' + encodeURIComponent(endpoint);
     const options = {
         method: method,
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (typeof authToken !== 'undefined' ? authToken : '')
+        }
     };
-    
     if (data && (method === 'POST' || method === 'PUT')) {
         options.body = JSON.stringify(data);
     }
-    
     try {
-        const response = await fetch(SCANNER_API + endpoint, options);
+        const response = await fetch(url, options);
         return await response.json();
     } catch (error) {
         console.error('Scanner API Error:', error);
@@ -21993,7 +22912,7 @@ async function viewSourceTables(sourceId) {
     
     const modalHtml = `
         <div id="tablesModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;">
-            <div style="background:white;border-radius:12px;width:1000px;max-width:95%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="background:white;border-radius:12px;width:1200px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
                 <div style="padding:20px;border-bottom:1px solid #e5e7eb;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                         <h2 style="margin:0;font-size:18px;">📋 ${source.name} - ${t('Tables')} (${tables.length})</h2>
@@ -22022,7 +22941,7 @@ async function viewSourceTables(sourceId) {
                                 <th style="padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;">${t('Table')}</th>
                                 <th style="padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;">${t('Type')}</th>
                                 <th style="padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;">${t('Rows')}</th>
-                                <th style="padding:12px;text-align:left;border-bottom:2px solid #e5e7eb;">${t('Action')}</th>
+                                <th style="padding:12px;text-align:right;border-bottom:2px solid #e5e7eb;white-space:nowrap;">${t('Action')}</th>
                             </tr>
                         </thead>
                         <tbody id="tablesModalBody">
@@ -22105,13 +23024,14 @@ function filterTablesModal() {
                 <td style="padding:10px;font-weight:600;">${t.table_name}</td>
                 <td style="padding:10px;"><span style="background:${t.table_type === 'VIEW' ? '#e0e7ff' : '#dbeafe'};color:${t.table_type === 'VIEW' ? '#4338ca' : '#1d4ed8'};padding:4px 8px;border-radius:4px;font-size:12px;">${t.table_type || 'TABLE'}</span></td>
                 <td style="padding:10px;">${t.row_count != null ? t.row_count.toLocaleString() : '-'}</td>
-                <td style="padding:10px;">
-                    <button onclick="viewTableColumns(${sourceId}, '${t.schema_name}', '${t.table_name}')" style="padding:6px 12px;border:1px solid #d1d5db;background:white;border-radius:6px;cursor:pointer;margin-right:4px;font-size:12px;">${window.t('Columns')}</button>
-                    ${hasChanges ? `<button onclick="showTableDiff(${sourceId}, '${t.schema_name}', '${t.table_name}')" style="padding:6px 12px;border:1px solid #f59e0b;background:#fffbeb;border-radius:6px;cursor:pointer;margin-right:4px;font-size:12px;">${window.t('Differences')}</button>` : ''}
-                    ${isImported ? 
-                        `<button onclick="updateTableInCatalog(${sourceId}, '${t.schema_name}', '${t.table_name}')" style="padding:6px 12px;border:none;background:#10b981;color:white;border-radius:6px;cursor:pointer;font-size:12px;">${window.t('Update')}</button>` :
-                        `<button onclick="importTableToCatalog(${sourceId}, '${t.schema_name}', '${t.table_name}')" style="padding:6px 12px;border:none;background:#6366f1;color:white;border-radius:6px;cursor:pointer;font-size:12px;">Import</button>`
-                    }
+                <td style="padding:10px;white-space:nowrap;text-align:right;">
+                    <div style="display:inline-flex;gap:6px;justify-content:flex-end;">
+                        <button onclick="viewTableColumns(${sourceId}, '${t.schema_name}', '${t.table_name}')" style="padding:6px 12px;border:1px solid #d1d5db;background:white;border-radius:6px;cursor:pointer;font-size:12px;">${window.t('Columns')}</button>
+                        ${hasChanges ? `<button onclick="showTableDiff(${sourceId}, '${t.schema_name}', '${t.table_name}')" style="padding:6px 12px;border:1px solid #f59e0b;background:#fffbeb;border-radius:6px;cursor:pointer;font-size:12px;">${window.t('Differences')}</button>` : ''}
+                        ${isImported
+                            ? `<button onclick="updateTableInCatalog(${sourceId}, '${t.schema_name}', '${t.table_name}')" style="padding:6px 12px;border:none;background:#10b981;color:white;border-radius:6px;cursor:pointer;font-size:12px;">${window.t('Update')}</button>`
+                            : `<button onclick="importTableToCatalog(${sourceId}, '${t.schema_name}', '${t.table_name}')" style="padding:6px 12px;border:none;background:#6366f1;color:white;border-radius:6px;cursor:pointer;font-size:12px;">Import</button>`}
+                    </div>
                 </td>
             </tr>
         `;
@@ -22700,9 +23620,9 @@ function renderTermCard(term, idx) {
     // Hover actions
     html += '<div class="card-actions" style="position: absolute; top: 12px; right: 12px; display: flex; gap: 2px; opacity: 0; transition: all 0.3s; background: white; border-radius: 8px; padding: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">' +
         '<button class="action-btn" onclick="event.stopPropagation(); copyElementLink(\'/glossary/term/' + (term.id || idx) + '\')" title="' + t('Copy link') + '" style="width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: #64748b;">🔗</button>' +
-        '<button class="action-btn" onclick="event.stopPropagation(); editTerm(' + idx + ')" title="' + t('Edit') + '" style="width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: #64748b;">✏️</button>' +
+        (canEditTerm(term) ? '<button class="action-btn" onclick="event.stopPropagation(); editTerm(' + idx + ')" title="' + t('Edit') + '" style="width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: #64748b;">✏️</button>' : '') +
         '<button class="action-btn" onclick="event.stopPropagation(); viewTerm(' + idx + ')" title="' + t('View') + '" style="width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: #64748b;">👁️</button>' +
-        '<button class="action-btn delete" onclick="event.stopPropagation(); deleteTerm(' + idx + ')" title="' + t('Delete') + '" style="width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: #ef4444;">🗑️</button>' +
+        (canDeleteTerm(term) ? '<button class="action-btn delete" onclick="event.stopPropagation(); deleteTerm(' + idx + ')" title="' + t('Delete') + '" style="width: 28px; height: 28px; border-radius: 6px; border: none; background: transparent; cursor: pointer; color: #ef4444;">🗑️</button>' : '') +
     '</div>';
     
     // Header
